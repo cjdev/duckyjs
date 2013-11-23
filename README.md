@@ -11,7 +11,7 @@ As an engineer who TDDs javascript code, I want a way to enforce contracts when 
 example
 =======
 
-		var types =  ducky.createTypeSystem();
+		var types =  protocop.createTypeSystem();
 
 		var animalType = types.compile(
 			"name:string",
