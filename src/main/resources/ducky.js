@@ -16,6 +16,25 @@ var ducky = (function(){
 			}
 		}
 	}
+	
+
+	function map(items, fn){
+		var results = [];
+		each(items, function(idx, item){
+			results.push(fn(idx, item));
+		});
+		return results;
+	}
+
+	function mkstring(items, separator){
+		var str = "";
+		each(items, function(num, item){
+			if(num>0) str += separator;
+			str += item;
+		});
+		return str;
+	}
+
 
 	function makeType(spec){
 
@@ -50,23 +69,6 @@ var ducky = (function(){
 				matches:problems.length === 0,
 				problems:problems
 			};
-		}
-
-		function map(items, fn){
-			var results = [];
-			each(items, function(idx, item){
-				results.push(fn(idx, item));
-			});
-			return results;
-		}
-
-		function mkstring(items, separator){
-			var str = "";
-			each(items, function(num, item){
-				if(num>0) str += separator;
-				str += item;
-			});
-			return str;
 		}
 
 		function assert(o){
@@ -122,13 +124,61 @@ var ducky = (function(){
 	}
 
 	function createTypeSystem(){
+		
+		function compile(){
+			return makeType(parse.apply(null, arguments));
+		}
+		
 		return {
-			register:makeType
+			register:makeType,
+			compile:compile
 		};
 	}	
 
+	function parse(){
+		
+		function compileTypeString(typeSpec){
+			console.log("typeSpec is " + typeSpec);
+			var argSpec;
+			var i = typeSpec.indexOf('(');
+			console.log("paren at " + i);
+			if(i>0){
+				var type = typeSpec.substring(0, i);
+				var argsSpec = typeSpec.substring(i+1, typeSpec.length-1);
+				console.log("args are " + argsSpec);
+				var params = map(argsSpec.split(','), function(idx, arg){
+					return {type:arg};
+				});
+				argSpec = {type: type, params:params};
+			}else{
+				argSpec = {type: typeSpec};
+			}
+			return argSpec;
+		}
+		
+		var spec = {};
+		each(arguments, function(idx, line){
+			var parts = line.split(":");
+			var propertyName;
+			
+			if(parts.length>1){
+				propertyName = parts[0];
+				console.log("name is " + propertyName);
+				propertySpec = compileTypeString(parts[1]);
+			}else{
+				propertyName = line;
+				propertySpec = "*";
+			}
+			
+			spec[propertyName] = propertySpec;
+		});
+		
+		return spec;
+	}
+	
 	return {
-		createTypeSystem:createTypeSystem
+		createTypeSystem:createTypeSystem,
+		parse:parse
 	};
 }());
 

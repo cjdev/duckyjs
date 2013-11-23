@@ -178,6 +178,90 @@ define(["ducky"], function(dky){
 							 '    1: expected a property named "foo"\n' + 
 							 '    2: expected a property named "bar"');
 	});
+	
+	test("parse", function(){
+
+		// when
+		var result = dky.parse(
+				"crawl",
+				"walk:function",
+				"jump:function(string)"
+		);
+		
+		// then
+		deepEqual(result, {
+							crawl:"*",
+							walk:{type:"function"},
+							jump:{type:"function", params:[{type:"string"}]}
+						   });
+	});
+	
+	test("compile", function(){
+		// given
+		var types = dky.createTypeSystem();
+
+
+		// when
+		var type = types.compile(
+				"crawl",
+				"walk:function",
+				"jump:function(string)"
+		);
+		
+		// then
+		var problems = type.check({});
+
+		deepEqual(problems, {
+			  "matches": false,
+			  "problems": [
+			    'expected a property named "crawl"',
+			    'expected a property named "walk"',
+			    'expected a property named "jump"'
+			  ]
+			});
+	});
+	
+	test("demo", function(){
+
+		// DUCKYJS -> "Duck" Typing for Javascript
+
+		var types =  dky.createTypeSystem();
+
+		var animalType = types.compile(
+			"name:string",
+			"jump:function",
+		    "respond:function(string)"
+		);
+
+		var goodAnimal = {
+		    specialProperty:"foobar",
+		    name:"ralph",
+			jump:function(){},
+			respond:function(name){}
+		};
+		
+		var badAnimal = {
+			
+		};
+
+		equal(animalType.check(badAnimal).matches, false);
+		console.log(animalType.check(badAnimal));
+		var animal = animalType.dynamic(goodAnimal);
+		
+		try{
+			animal.respond();
+		}catch(e){
+			// expected, because we passed an invalid number of arguments
+		}
+		
+//		var mockAnimal = animalType.stub({
+//			respone:function(message){return message + " ... I see .... interesting ...";}
+//		});
+
+
+		
+		
+	});
 
 
 });
