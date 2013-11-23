@@ -20,6 +20,18 @@
                         	    </execution>
                         	</executions>
                     	</plugin>
+		     <plugin>
+		         <groupId>com.cj.jshintmojo</groupId>
+		         <artifactId>jshint-maven-plugin</artifactId>
+		         <version>0.0.10</version>
+		         <executions>
+		             <execution>
+		                 <goals>
+		                     <goal>lint</goal>
+		                 </goals>
+		             </execution>
+		         </executions>
+			</plugin>
 		</plugins>
 	</build>
 </project>
