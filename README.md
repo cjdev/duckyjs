@@ -1,4 +1,4 @@
-duckyjs
+Protocop
 =======
 
 A lightweight tool for ad-hoc, runtime, protocol/interface contract enforcement for javascript .  See http://en.wikipedia.org/wiki/Protocol_(object-oriented_programming).
