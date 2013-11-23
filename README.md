@@ -52,3 +52,10 @@ example
 		}catch(e){
 			equal(e, "respond(): invalid argument #1: expected type string but was number");
 		}
+
+see also
+=======
+ * http://jeditoolkit.com/2012/03/21/protocol-based-polymorphism.html
+ * https://github.com/Gozala/protocol
+ * https://github.com/codeparty/protocoljs
+ * https://code.google.com/p/toryt/
