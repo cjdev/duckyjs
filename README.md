@@ -1,7 +1,7 @@
 duckyjs
 =======
 
-A lightweight tool for ad-hoc, runtime, "duck type" contract enforcement in javascript.  See http://en.wikipedia.org/wiki/Duck_typing.
+A lightweight tool for ad-hoc, runtime, protocol/interface contract enforcement for javascript .  See http://en.wikipedia.org/wiki/Protocol_(object-oriented_programming).
 
 user stories
 =======
