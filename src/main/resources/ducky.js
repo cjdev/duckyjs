@@ -166,14 +166,11 @@ var ducky = (function(){
 	function parse(){
 		
 		function compileTypeString(typeSpec){
-			console.log("typeSpec is " + typeSpec);
 			var argSpec;
 			var i = typeSpec.indexOf('(');
-			console.log("paren at " + i);
 			if(i>0){
 				var type = typeSpec.substring(0, i);
 				var argsSpec = typeSpec.substring(i+1, typeSpec.length-1);
-				console.log("args are " + argsSpec);
 				var params = map(argsSpec.split(','), function(idx, arg){
 					return {type:arg};
 				});
@@ -191,7 +188,6 @@ var ducky = (function(){
 			
 			if(parts.length>1){
 				propertyName = parts[0];
-				console.log("name is " + propertyName);
 				propertySpec = compileTypeString(parts[1]);
 			}else{
 				propertyName = line;
