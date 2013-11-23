@@ -1,16 +1,16 @@
 /*jshint smarttabs:true */
-define(["ducky"], function(dky){
+define(["protocop"], function(protocop){
 
 	test("ducky creates a typesystem", function(){
 		// when
-		var types = dky.createTypeSystem();
+		var types = protocop.createTypeSystem();
 		// then
 		ok(types);
 	});
 
 	test("a blank type", function(){
 		// given
-		var types = dky.createTypeSystem();
+		var types = protocop.createTypeSystem();
 		// when
 		var anyType = types.register({});
 
@@ -23,7 +23,7 @@ define(["ducky"], function(dky){
 	test("spec with a property", function(){
 
 		// given
-		var types = dky.createTypeSystem();
+		var types = protocop.createTypeSystem();
 		var spec = {
 				foo:"*"
 		};
@@ -45,7 +45,7 @@ define(["ducky"], function(dky){
 	test("spec with a string property", function(){
 
 		// given
-		var types = dky.createTypeSystem();
+		var types = protocop.createTypeSystem();
 		var spec = {
 				foo:{type:"string"}
 		};
@@ -67,7 +67,7 @@ define(["ducky"], function(dky){
 	test("spec with a method", function(){
 
 		// given
-		var types = dky.createTypeSystem();
+		var types = protocop.createTypeSystem();
 		var spec = {
 				foo:{type:"function"}
 		};
@@ -87,7 +87,7 @@ define(["ducky"], function(dky){
 	test("dynamic() checks method arity", function(){
 
 		// given
-		var types = dky.createTypeSystem();
+		var types = protocop.createTypeSystem();
 		var type = types.register({
 			foo:{
 				type:"function",
@@ -111,7 +111,7 @@ define(["ducky"], function(dky){
 	test("dynamic() checks argument types", function(){
 
 		// given
-		var types = dky.createTypeSystem();
+		var types = protocop.createTypeSystem();
 		var type = types.register({
 			foo:{
 				type:"function",
@@ -135,7 +135,7 @@ define(["ducky"], function(dky){
 	test("dynamic() handles 'this' properly", function(){
 
 		// given
-		var types = dky.createTypeSystem();
+		var types = protocop.createTypeSystem();
 		var type = types.register({
 			foo:{
 				type:"function",
@@ -159,7 +159,7 @@ define(["ducky"], function(dky){
 	test("assert", function(){
 
 		// given
-		var types = dky.createTypeSystem();
+		var types = protocop.createTypeSystem();
 		var type = types.register({
 			foo:{type:"function"},
 			bar:"*"
@@ -182,7 +182,7 @@ define(["ducky"], function(dky){
 	test("parse", function(){
 
 		// when
-		var result = dky.parse(
+		var result = protocop.parse(
 				"crawl",
 				"walk:function",
 				"jump:function(string)"
@@ -198,7 +198,7 @@ define(["ducky"], function(dky){
 	
 	test("compile", function(){
 		// given
-		var types = dky.createTypeSystem();
+		var types = protocop.createTypeSystem();
 
 
 		// when
@@ -223,7 +223,7 @@ define(["ducky"], function(dky){
 	
 	test("stub()", function(){
 		// given
-		var types = dky.createTypeSystem();
+		var types = protocop.createTypeSystem();
 		var type = types.compile(
 				"crawl",
 				"walk:function",
@@ -251,7 +251,7 @@ define(["ducky"], function(dky){
 
 		// DUCKYJS -> "Duck" Typing for Javascript
 
-		var types =  dky.createTypeSystem();
+		var types =  protocop.createTypeSystem();
 
 		var animalType = types.compile(
 			"name:string",
