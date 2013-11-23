@@ -1,0 +1,25 @@
+<project>
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.cj.duckyjs</groupId>
+	<artifactId>duckyjs</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+
+	<build>
+		<plugins>
+			<plugin>
+                        	<groupId>com.cj.qunit.mojo</groupId>
+                        	<artifactId>qunit-maven-plugin</artifactId>
+                        	<version>2.0.7</version>
+                        	<executions>
+                        	    <execution>
+                        	        <phase>test</phase>
+                        	        <goals>
+                        	            <goal>test</goal>
+                        	        </goals>
+                        	    </execution>
+                        	</executions>
+                    	</plugin>
+		</plugins>
+	</build>
+</project>
