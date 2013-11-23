@@ -221,6 +221,32 @@ define(["ducky"], function(dky){
 			});
 	});
 	
+	test("stub()", function(){
+		// given
+		var types = dky.createTypeSystem();
+		var type = types.compile(
+				"crawl",
+				"walk:function",
+				"jump:function"
+		);
+		
+		// when
+		var stub = type.stub({
+			jump:function(){return "how high?";}
+		});
+		
+		// then
+		var exception;
+		try{
+			stub.walk();
+		}catch(e){
+			exception = e;
+		}
+		equal(exception, "stub method not implemented: walk()");
+		equal(stub.crawl, "stub property not implemented: crawl");
+		equal(stub.jump(), "how high?");
+	});
+	
 	test("demo", function(){
 
 		// DUCKYJS -> "Duck" Typing for Javascript
@@ -250,16 +276,22 @@ define(["ducky"], function(dky){
 		
 		try{
 			animal.respond();
+			fail("shouldn't get here because we passed an invalid number of arguments");
 		}catch(e){
-			// expected, because we passed an invalid number of arguments
+			equal(e, "arity problem: expected 1 but was 0");
 		}
 		
-//		var mockAnimal = animalType.stub({
-//			respone:function(message){return message + " ... I see .... interesting ...";}
-//		});
-
+		var mockAnimal = animalType.stub({
+			respond:function(message){return message + " ... I see .... interesting ...";}
+		});
 
 		
+		try{
+			mockAnimal.respond(33);
+			fail("shouldn't get here because we passed an invalid argument type");
+		}catch(e){
+			equal(e, "respond(): invalid argument #1: expected type string but was number");
+		}
 		
 	});
 

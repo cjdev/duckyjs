@@ -1,0 +1,3 @@
+Dynamic checking of return values
+Validation of input/output values as existing registered types
+handle nullability specs

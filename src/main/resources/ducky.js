@@ -80,17 +80,44 @@ var ducky = (function(){
 			if(problemDescriptions.length > 0){
 				throw "Found " + problemDescriptions.length + " duck-typing problems:\n" + mkstring(problemDescriptions, "\n");
 			}
+			
+			return o;
 		}
-
+		
+		function makeStub(o){
+			var stub = {};
+			
+			stub.prototype = o.prototype;
+			each(o, function(name, value){
+				stub[name] = value;
+			});
+			
+			each(spec, function(name, propSpec){
+				if(stub.hasOwnProperty(name)) return;
+				
+				var stubValue;
+				if(propSpec === "*" || propSpec.type !== "function"){
+					stubValue = ("stub property not implemented: " + name);
+				}else {
+					stubValue = function(){
+						throw "stub method not implemented: " + name + "()";
+					};
+				}
+				stub[name] = stubValue;
+			});
+			return dynamic(stub);
+		}
+		
 		function dynamic(o){
-			check(o);
+			assert(o);
 			each(spec, function(name, propSpec){
 
 				if(o.hasOwnProperty(name) && propSpec.params){
-					var undecorated, problems = [];
+					var undecorated;
 
 					undecorated = o[name];
 					o[name] = function(){
+						var problems = [];
 						if(arguments.length!=propSpec.params.length){
 							problems.push("arity problem: expected " + propSpec.params.length + " but was " + arguments.length);
 						}
@@ -119,7 +146,8 @@ var ducky = (function(){
 		return {
 			check:check,
 			assert:assert,
-			dynamic:dynamic
+			dynamic:dynamic,
+			stub:makeStub
 		};
 	}
 
