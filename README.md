@@ -1,7 +1,7 @@
 protocop
 =======
 
-A lightweight tool for ad-hoc, runtime, protocol/interface contract enforcement for javascript .  See http://en.wikipedia.org/wiki/Protocol_(object-oriented_programming).
+A lightweight tool for ad-hoc, runtime, protocol/interface contract enforcement in javascript .  See http://en.wikipedia.org/wiki/Protocol_(object-oriented_programming).
 
 user stories
 =======
