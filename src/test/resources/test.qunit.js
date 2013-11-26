@@ -1,6 +1,10 @@
 /*jshint smarttabs:true */
 define(["protocop"], function(protocop){
-
+	
+	function fail(message){
+		ok(false, message);
+	}
+	
 	test("joe creates a typesystem", function(){
 		// when
 		var types = protocop.createTypeSystem();
@@ -160,6 +164,30 @@ define(["protocop"], function(protocop){
 		deepEqual(exception, 'foo(): invalid return type: expected type string but was number');
 	});
 	
+
+	test("dynamic() leaves other properties alone", function(){
+
+		// given
+		var types = protocop.createTypeSystem();
+		var type = types.register({
+			a:{type:"string"}
+		});
+
+		var o = type.dynamic({
+			a:"some text",
+			foo:function(){
+				return 33;
+			}
+		});
+
+		// when
+		var result = o.foo("give me a string");
+		
+		// then
+		equal(33, result);
+	});
+	
+	
 	test("dynamic() handles 'this' properly", function(){
 
 		// given
@@ -301,6 +329,45 @@ define(["protocop"], function(protocop){
 		equal(stub.jump(), "how high?");
 	});
 	
+	test("kill switch disables checks on new and existing items", function(){
+		// given
+		var types = protocop.createTypeSystem();
+		var type = types.compile(
+				"respond:function(string)->string"
+		);
+		var badImplementation = {
+			respond:function(){return 33;}
+		};
+		var existingDynamic = type.dynamic(badImplementation);
+		var existingStub = type.stub(badImplementation);
+		
+		// when
+		types.disable();
+		
+		// then
+		
+		
+		var error;
+		try{
+			type.assert({});
+			deepEqual(type.check({}), {matches:true, problems:[]});
+			var items = [
+			             existingDynamic, 
+			             existingStub, 
+			             type.dynamic(badImplementation), 
+			             type.stub(badImplementation)];
+			
+			for(var i=0;i<items.length;i++){
+				var item = items[i];
+				item.respond();
+				item.respond("boo!");
+			}
+		}catch(e){
+			error = e;
+		}
+		equal(error, undefined, "All checks should be disabled");
+	});
+	
 	test("demo", function(){
 		
 		// Suppose you have 2 animals
@@ -385,6 +452,14 @@ define(["protocop"], function(protocop){
 			fail("shouldn't get here because we haven't mocked out this method");
 		}catch(e){
 			equal(e, "stub method not implemented: jump()");
+		}
+		
+		// Now, for a little "unprotected" code execution... 
+		types.disable();
+		try{
+			mockAnimal.respond("hi");
+		}catch(err){
+			fail("Shouldn't get there, since all checks were disabled (" + err + ")");
 		}
 		
 	});

@@ -94,6 +94,15 @@ try{
 }catch(e){
 	equal(e, "stub method not implemented: jump()");
 }
+
+// Now, for a little "unprotected" code execution... 
+types.disable();
+try{
+	mockAnimal.respond("hi");
+}catch(err){
+	fail("Shouldn't get there, since all checks were disabled (" + err + ")");
+}
+
 ```
 
 

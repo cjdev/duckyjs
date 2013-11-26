@@ -36,7 +36,7 @@ var protocop = (function(){
 	}
 
 
-	function makeType(spec){
+	function makeType(spec, checkIsDisabled){
 
 		function typeCheck(value, propSpec){
 			var valueType = typeof value;
@@ -49,6 +49,7 @@ var protocop = (function(){
 		}
 
 		function check(o){
+			if(checkIsDisabled()) return {matches:true, problems:[]};
 			var matches = true, problems=[];
 
 			each(spec, function(name, propSpec){
@@ -72,6 +73,8 @@ var protocop = (function(){
 		}
 
 		function assert(o){
+			if(checkIsDisabled()) return o;
+			
 			var problemDescriptions = map(check(o).problems, function(idx, problem){
 				var num = idx + 1;
 				return "    " + num + ": " + problem;
@@ -114,7 +117,7 @@ var protocop = (function(){
 
 				if(o.hasOwnProperty(name) && propSpec.params){
 					var undecorated;
-
+					
 					undecorated = o[name];
 					o[name] = function(){
 						var problems = [];
@@ -132,7 +135,7 @@ var protocop = (function(){
 								}
 							}
 						});
-						if(problems.length>0){
+						if((!checkIsDisabled()) && problems.length>0){
 							throw mkstring(problems, "\n");
 						}else{
 							var result = undecorated.apply(this, arguments);
@@ -142,7 +145,7 @@ var protocop = (function(){
 								returnProblem = typeCheck(result, propSpec.returns);
 							}
 							
-							if(returnProblem){
+							if((!checkIsDisabled()) && returnProblem){
 								throw (name + "(): invalid return type: " + returnProblem);
 							}else{
 								return result;
@@ -164,13 +167,28 @@ var protocop = (function(){
 
 	function createTypeSystem(){
 		
+		var disabled = false;
+		
+		function isDisabled(){
+			return disabled;
+		}
+		
+		function disable(){
+			disabled = true;
+		}
+		
 		function compile(){
-			return makeType(parse.apply(null, arguments));
+			return makeType(parse.apply(null, arguments), isDisabled);
+		}
+		
+		function register(spec){
+			return makeType(spec, isDisabled);
 		}
 		
 		return {
-			register:makeType,
-			compile:compile
+			register:register,
+			compile:compile,
+			disable:disable
 		};
 	}	
 
