@@ -6,7 +6,7 @@ A lightweight tool for ad-hoc, runtime, protocol/interface contract enforcement 
 user stories
 =======
 
-As an engineer who TDDs javascript code, I want a way to enforce contracts when components are shared, so that I can refactor with confidence that my code is working when the tests are green.
+As an engineer who TDDs javascript code, I want an easy way to enforce contracts on shared components, so that I can trust the "green" when I refactor.
 
 example
 =======
