@@ -98,6 +98,8 @@ try{
 // Now, for a little "unprotected" code execution... 
 types.disable();
 try{
+	animal.respond();
+	animal.respond("hi");
 	mockAnimal.respond("hi");
 }catch(err){
 	fail("Shouldn't get there, since all checks were disabled (" + err + ")");
