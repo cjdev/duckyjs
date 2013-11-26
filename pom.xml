@@ -1,8 +1,8 @@
 <project>
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.cj.duckyjs</groupId>
-	<artifactId>duckyjs</artifactId>
+	<groupId>com.cj.protocop</groupId>
+	<artifactId>protocop</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 
 	<build>
