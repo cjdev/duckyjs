@@ -59,7 +59,7 @@ try{
 }
 
 
-// And, for testing, let's stub out the interesting parts of the contract ...
+// And, for testing, let's mock-out the interesting parts of the contract ...
 var mockAnimal = animalType.stub({
 	respond:function(message){return message + " ... I see .... interesting ...";}
 });
