@@ -135,7 +135,18 @@ var protocop = (function(){
 						if(problems.length>0){
 							throw mkstring(problems, "\n");
 						}else{
-							return undecorated.apply(this, arguments);
+							var result = undecorated.apply(this, arguments);
+							var returnProblem;
+							
+							if(propSpec.returns){
+								returnProblem = typeCheck(result, propSpec.returns);
+							}
+							
+							if(returnProblem){
+								throw (name + "(): invalid return type: " + returnProblem);
+							}else{
+								return result;
+							}
 						}
 					};
 				}
@@ -170,11 +181,24 @@ var protocop = (function(){
 			var i = typeSpec.indexOf('(');
 			if(i>0){
 				var type = typeSpec.substring(0, i);
-				var argsSpec = typeSpec.substring(i+1, typeSpec.length-1);
+				var returnType;
+				var argsSpec;
+				
+				var parts = typeSpec.split("->");
+				
+				var beforeReturnPart = parts[0];
+				
+				argsSpec = beforeReturnPart.substring(i+1, beforeReturnPart.length-1);
+				
 				var params = map(argsSpec.split(','), function(idx, arg){
 					return {type:arg};
 				});
+				
 				argSpec = {type: type, params:params};
+				
+				if(parts.length>1){
+					argSpec.returns = {type:parts[1]};
+				}
 			}else{
 				argSpec = {type: typeSpec};
 			}

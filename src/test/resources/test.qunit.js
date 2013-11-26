@@ -1,7 +1,7 @@
 /*jshint smarttabs:true */
 define(["protocop"], function(protocop){
 
-	test("ducky creates a typesystem", function(){
+	test("joe creates a typesystem", function(){
 		// when
 		var types = protocop.createTypeSystem();
 		// then
@@ -132,6 +132,34 @@ define(["protocop"], function(protocop){
 		deepEqual(exception, 'foo(): invalid argument #1: expected type string but was number');
 	});
 	
+	
+	test("dynamic() checks return types", function(){
+
+		// given
+		var types = protocop.createTypeSystem();
+		var type = types.register({
+			foo:{
+				type:"function",
+				params:[{type:"string"}],
+				returns:{type:"string"}}
+		});
+
+		var o = type.dynamic({foo:function(){
+			return 33;
+		}});
+
+		// when
+		var exception;
+		try{
+			o.foo("give me a string");
+		}catch(e){
+			exception = e;
+		}
+		
+		// then
+		deepEqual(exception, 'foo(): invalid return type: expected type string but was number');
+	});
+	
 	test("dynamic() handles 'this' properly", function(){
 
 		// given
@@ -221,6 +249,32 @@ define(["protocop"], function(protocop){
 			});
 	});
 	
+	test("compile works with return types", function(){
+		// given
+		var types = protocop.createTypeSystem();
+
+
+		// when
+		var type = types.compile(
+				"talk:function(string)->string"
+		);
+		
+		// then
+		var wrapped = type.dynamic({
+			talk:function(){
+				return 33;
+			}
+		});
+
+		try{
+			wrapped.talk("hi");
+			fail("should have failed due to the invalid return type");
+		}catch(err){
+			equal(err, "talk(): invalid return type: expected type string but was number");
+		}
+		
+	});
+	
 	test("stub()", function(){
 		// given
 		var types = protocop.createTypeSystem();
@@ -267,7 +321,7 @@ define(["protocop"], function(protocop){
 		var animalType = types.compile(
 			"name:string",
 			"jump:function",
-		    "respond:function(string)"
+		    "respond:function(string)->string"
 		);
 		
 		// We can do static checks against the interfaces
@@ -296,13 +350,21 @@ define(["protocop"], function(protocop){
 			equal(e, "arity problem: expected 1 but was 0");
 		}
 		
+		try{
+			animal.respond("hi");
+			fail("we didn't return anything ... contract violation!");
+		}catch(e){
+			equal(e, "respond(): invalid return type: expected type string but was undefined");
+		}
 		
-		// And, for testing, let's mock-out the interesting parts of the contract ...
+		
+		// Meanwhile, in test land, let's mock-out the interesting parts of the contract ...
 		var mockAnimal = animalType.stub({
-			respond:function(message){return message + " ... I see .... interesting ...";}
+			respond:function(message){return 2323;}
 		});
 		
 		
+		// Oops, we violated our contract!
 		try{
 			mockAnimal.respond(33);
 			fail("shouldn't get here because we passed an invalid argument type");
@@ -310,6 +372,14 @@ define(["protocop"], function(protocop){
 			equal(e, "respond(): invalid argument #1: expected type string but was number");
 		}
 		
+		try{
+			mockAnimal.respond("hi");
+			fail("shouldn't get here because our mock returned the wrong result type");
+		}catch(e){
+			equal(e, "respond(): invalid return type: expected type string but was number");
+		}
+
+		// Unimplemented stub methods throw a timely exception
 		try{
 			mockAnimal.jump();
 			fail("shouldn't get here because we haven't mocked out this method");
