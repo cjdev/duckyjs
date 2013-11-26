@@ -1,4 +1,4 @@
-var ducky = (function(){
+var protocop = (function(){
 
 	function isArray(obj) {
 		return (typeof obj !== 'undefined' &&
@@ -78,7 +78,7 @@ var ducky = (function(){
 			});
 
 			if(problemDescriptions.length > 0){
-				throw "Found " + problemDescriptions.length + " duck-typing problems:\n" + mkstring(problemDescriptions, "\n");
+				throw "Found " + problemDescriptions.length + " interface violations:\n" + mkstring(problemDescriptions, "\n");
 			}
 			
 			return o;
@@ -207,5 +207,5 @@ var ducky = (function(){
 }());
 
 if(define && typeof define === "function"){
-	define([], ducky);
+	define([], protocop);
 }

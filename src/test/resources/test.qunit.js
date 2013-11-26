@@ -174,7 +174,7 @@ define(["protocop"], function(protocop){
 		}
 
 		// then
-		deepEqual(exception, "Found 2 duck-typing problems:\n" + 
+		deepEqual(exception, "Found 2 interface violations:\n" + 
 							 '    1: expected a property named "foo"\n' + 
 							 '    2: expected a property named "bar"');
 	});
@@ -248,17 +248,9 @@ define(["protocop"], function(protocop){
 	});
 	
 	test("demo", function(){
-
-		// DUCKYJS -> "Duck" Typing for Javascript
-
-		var types =  protocop.createTypeSystem();
-
-		var animalType = types.compile(
-			"name:string",
-			"jump:function",
-		    "respond:function(string)"
-		);
-
+		
+		// Suppose you have 2 animals
+		
 		var goodAnimal = {
 		    specialProperty:"foobar",
 		    name:"ralph",
@@ -266,13 +258,36 @@ define(["protocop"], function(protocop){
 			respond:function(name){}
 		};
 		
-		var badAnimal = {
-			
-		};
-
+		var badAnimal = {};
+		
+		
+		// Define your interface/protocol		
+		var types =  protocop.createTypeSystem();
+		
+		var animalType = types.compile(
+			"name:string",
+			"jump:function",
+		    "respond:function(string)"
+		);
+		
+		// We can do static checks against the interfaces
+		equal(animalType.check(goodAnimal).matches, true);
 		equal(animalType.check(badAnimal).matches, false);
-		console.log(animalType.check(badAnimal));
-		var animal = animalType.dynamic(goodAnimal);
+		
+		// We can use assert() to do static checks too
+		try{
+			animalType.assert(badAnimal);
+			fail("shouldn't get here because assert will throw an exception");
+		}catch(e){
+			equal(e, 'Found 3 interface violations:\n' +
+				    '    1: expected a property named "name"\n' +
+				    '    2: expected a property named "jump"\n' +
+				    '    3: expected a property named "respond"');
+		}
+		
+		
+		// Now let's add dynamic protocol enforcement.
+        var animal = animalType.dynamic(goodAnimal);
 		
 		try{
 			animal.respond();
@@ -281,16 +296,25 @@ define(["protocop"], function(protocop){
 			equal(e, "arity problem: expected 1 but was 0");
 		}
 		
+		
+		// And, for testing, let's stub out the interesting parts of the contract ...
 		var mockAnimal = animalType.stub({
 			respond:function(message){return message + " ... I see .... interesting ...";}
 		});
-
+		
 		
 		try{
 			mockAnimal.respond(33);
 			fail("shouldn't get here because we passed an invalid argument type");
 		}catch(e){
 			equal(e, "respond(): invalid argument #1: expected type string but was number");
+		}
+		
+		try{
+			mockAnimal.jump();
+			fail("shouldn't get here because we haven't mocked out this method");
+		}catch(e){
+			equal(e, "stub method not implemented: jump()");
 		}
 		
 	});
