@@ -1,2 +1,2 @@
 Validation of input/output values as existing registered types
-handle nullability specs
+handle nullability & "undefinability" specs
