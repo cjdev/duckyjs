@@ -341,7 +341,7 @@ define(["protocop"], function(protocop){
 		
 		
 		// Now let's add dynamic protocol enforcement.
-        var animal = animalType.dynamic(goodAnimal);
+		var animal = animalType.dynamic(goodAnimal);
 		
 		try{
 			animal.respond();
@@ -378,7 +378,7 @@ define(["protocop"], function(protocop){
 		}catch(e){
 			equal(e, "respond(): invalid return type: expected type string but was number");
 		}
-
+		
 		// Unimplemented stub methods throw a timely exception
 		try{
 			mockAnimal.jump();

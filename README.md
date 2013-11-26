@@ -29,7 +29,7 @@ var types =  protocop.createTypeSystem();
 var animalType = types.compile(
 	"name:string",
 	"jump:function",
-    "respond:function(string)"
+    "respond:function(string)->string"
 );
 
 // We can do static checks against the interfaces
@@ -58,13 +58,21 @@ try{
 	equal(e, "arity problem: expected 1 but was 0");
 }
 
+try{
+	animal.respond("hi");
+	fail("we didn't return anything ... contract violation!");
+}catch(e){
+	equal(e, "respond(): invalid return type: expected type string but was undefined");
+}
 
-// And, for testing, let's mock-out the interesting parts of the contract ...
+
+// Meanwhile, in test land, let's mock-out the interesting parts of the contract ...
 var mockAnimal = animalType.stub({
-	respond:function(message){return message + " ... I see .... interesting ...";}
+	respond:function(message){return 2323;}
 });
 
 
+// Oops, we violated our contract!
 try{
 	mockAnimal.respond(33);
 	fail("shouldn't get here because we passed an invalid argument type");
@@ -72,6 +80,14 @@ try{
 	equal(e, "respond(): invalid argument #1: expected type string but was number");
 }
 
+try{
+	mockAnimal.respond("hi");
+	fail("shouldn't get here because our mock returned the wrong result type");
+}catch(e){
+	equal(e, "respond(): invalid return type: expected type string but was number");
+}
+
+// Unimplemented stub methods throw a timely exception
 try{
 	mockAnimal.jump();
 	fail("shouldn't get here because we haven't mocked out this method");
