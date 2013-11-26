@@ -461,7 +461,7 @@ define(["protocop"], function(protocop){
 		}catch(err){
 			fail("Shouldn't get there, since all checks were disabled (" + err + ")");
 		}
-		
+
 	});
 
 
