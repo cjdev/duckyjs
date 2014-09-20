@@ -12,6 +12,52 @@ define(["protocop"], function(protocop){
 		ok(types);
 	});
 
+	
+    test("a standalone function", function(){
+        // given
+        var types = protocop.createTypeSystem();
+        // when
+        var signature = types.registerFn([{type:"string"}],{type:"string"});
+
+        // then
+        ok(signature);
+        equal(signature.check(function(){}).matches, true);
+        equal(signature.check({}).matches, false);
+        equal(signature.check(9).matches, false);
+        equal(signature.check("").matches, false);
+    });
+    
+    function assertThrows(expected, fn){
+        try{
+            fn();
+            fail("Expected " + expected);
+        }catch(e){
+            equal(e, expected);
+        }
+    }
+    
+    test("wrapping a standalone function", function(){
+        // given
+        var types = protocop.createTypeSystem();
+        
+        // when
+        var signature = types.registerFn([{type:"string"}],{type:"string"});
+        
+        // then
+        assertThrows("arity problem: expected 1 but was 0", function(){
+            var wrapper= signature.dynamic(function(){});
+            wrapper();
+        });
+        assertThrows("(): invalid argument #1: expected type string but was number", function(){
+            var wrapper= signature.dynamic(function(){});
+            wrapper(1);
+        });
+        assertThrows("(): invalid return type: expected type string but was number", function(){
+            var wrapper= signature.dynamic(function(){return 1;});
+            wrapper("input");
+        });
+    });
+    
 	test("a blank type", function(){
 		// given
 		var types = protocop.createTypeSystem();

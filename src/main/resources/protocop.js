@@ -34,19 +34,55 @@ var protocop = (function(){
 		});
 		return str;
 	}
+	
+	function typeCheck(value, propSpec){
+        var valueType = typeof value;
+        if(valueType !== propSpec.type){
+            return 'expected type ' + propSpec.type + " but was " + valueType;
+        }else{
+            return false;
+        }
+    }
+	
+	function dynamicFnWrapper(name, undecorated, propSpec, checkIsDisabled){
+        return function(){
+            var problems = [];
+            if(arguments.length!=propSpec.params.length){
+                problems.push("arity problem: expected " + propSpec.params.length + " but was " + arguments.length);
+            }
 
+            each(arguments, function(idx, value){
+                var num = idx + 1;
+                var paramSpec = propSpec.params[idx];
+                if(paramSpec){
+                    var problem = typeCheck(value, propSpec.params[idx]);
+                    if(problem){
+                        problems.push(name + "(): invalid argument #" + num + ": " + problem);
+                    }
+                }
+            });
+            if((!checkIsDisabled()) && problems.length>0){
+                throw mkstring(problems, "\n");
+            }else{
+                var result = undecorated.apply(this, arguments);
+                var returnProblem;
+                
+                if(propSpec.returns){
+                    returnProblem = typeCheck(result, propSpec.returns);
+                }
+                
+                if((!checkIsDisabled()) && returnProblem){
+                    throw (name + "(): invalid return type: " + returnProblem);
+                }else{
+                    return result;
+                }
+            }
+        };
+    }
 
 	function makeType(spec, checkIsDisabled){
 
-		function typeCheck(value, propSpec){
-			var valueType = typeof value;
-			if(valueType !== propSpec.type){
-				return 'expected type ' + propSpec.type + " but was " + valueType;
-			}else{
-				return false;
-			}
-
-		}
+		
 
 		function check(o){
 			if(checkIsDisabled()) return {matches:true, problems:[]};
@@ -111,6 +147,8 @@ var protocop = (function(){
 			return dynamic(stub);
 		}
 		
+		
+		
 		function dynamic(o){
 			assert(o);
 			each(spec, function(name, propSpec){
@@ -119,39 +157,7 @@ var protocop = (function(){
 					var undecorated;
 					
 					undecorated = o[name];
-					o[name] = function(){
-						var problems = [];
-						if(arguments.length!=propSpec.params.length){
-							problems.push("arity problem: expected " + propSpec.params.length + " but was " + arguments.length);
-						}
-
-						each(arguments, function(idx, value){
-							var num = idx + 1;
-							var paramSpec = propSpec.params[idx];
-							if(paramSpec){
-								var problem = typeCheck(value, propSpec.params[idx]);
-								if(problem){
-									problems.push(name + "(): invalid argument #" + num + ": " + problem);
-								}
-							}
-						});
-						if((!checkIsDisabled()) && problems.length>0){
-							throw mkstring(problems, "\n");
-						}else{
-							var result = undecorated.apply(this, arguments);
-							var returnProblem;
-							
-							if(propSpec.returns){
-								returnProblem = typeCheck(result, propSpec.returns);
-							}
-							
-							if((!checkIsDisabled()) && returnProblem){
-								throw (name + "(): invalid return type: " + returnProblem);
-							}else{
-								return result;
-							}
-						}
-					};
+					o[name] = dynamicFnWrapper(name, undecorated, propSpec, checkIsDisabled);
 				}
 			});
 			return o;
@@ -187,6 +193,26 @@ var protocop = (function(){
 		
 		return {
 			register:register,
+			registerFn:function(params, returns){
+			    var spec = {
+			            type:"function",
+			            params:params,
+			            returns:returns
+			    };
+			    return {
+			        check:function(candidate){
+			            var problemDescription = typeCheck(candidate, spec);
+			            if(problemDescription){
+			                return {matches:false};
+			            }else{
+			                return {matches:true};
+			            }
+			        },
+			        dynamic:function(fn){
+			            return dynamicFnWrapper("", fn, spec, isDisabled);
+			        }
+			    };
+			},
 			compile:compile,
 			disable:disable
 		};
