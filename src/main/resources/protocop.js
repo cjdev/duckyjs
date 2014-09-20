@@ -184,11 +184,34 @@ var protocop = (function(){
 		}
 		
 		function compile(){
-			return makeType(parse.apply(null, arguments), isDisabled);
+		    if(arguments.length==1 && arguments[0].toString().indexOf("function(") ==0){
+		        var str = arguments[0];
+		        console.log(str);
+		        var fnSpec = compileTypeString(str);
+		        return makeSignature(fnSpec);
+		    }else{
+	            return makeType(parse.apply(null, arguments), isDisabled);
+		    }
 		}
 		
 		function register(spec){
 			return makeType(spec, isDisabled);
+		}
+		
+		function makeSignature(spec){
+		    return {
+                check:function(candidate){
+                    var problemDescription = typeCheck(candidate, spec);
+                    if(problemDescription){
+                        return {matches:false, problems:[problemDescription]};
+                    }else{
+                        return {matches:true, problems:[]};
+                    }
+                },
+                dynamic:function(fn){
+                    return dynamicFnWrapper("", fn, spec, isDisabled);
+                }
+            };
 		}
 		
 		return {
@@ -199,55 +222,44 @@ var protocop = (function(){
 			            params:params,
 			            returns:returns
 			    };
-			    return {
-			        check:function(candidate){
-			            var problemDescription = typeCheck(candidate, spec);
-			            if(problemDescription){
-			                return {matches:false};
-			            }else{
-			                return {matches:true};
-			            }
-			        },
-			        dynamic:function(fn){
-			            return dynamicFnWrapper("", fn, spec, isDisabled);
-			        }
-			    };
+			    return makeSignature(spec);
 			},
 			compile:compile,
 			disable:disable
 		};
 	}	
 
+	function compileTypeString(typeSpec){
+	    var argSpec;
+	    var i = typeSpec.indexOf('(');
+	    if(i>0){
+	        var type = typeSpec.substring(0, i);
+	        var returnType;
+	        var argsSpec;
+	        
+	        var parts = typeSpec.split("->");
+	        
+	        var beforeReturnPart = parts[0];
+	        
+	        argsSpec = beforeReturnPart.substring(i+1, beforeReturnPart.length-1);
+	        
+	        var params = map(argsSpec.split(','), function(idx, arg){
+	            return {type:arg};
+	        });
+	        
+	        argSpec = {type: type, params:params};
+	        
+	        if(parts.length>1){
+	            argSpec.returns = {type:parts[1]};
+	        }
+	    }else{
+	        argSpec = {type: typeSpec};
+	    }
+	    return argSpec;
+	}
+	
 	function parse(){
 		
-		function compileTypeString(typeSpec){
-			var argSpec;
-			var i = typeSpec.indexOf('(');
-			if(i>0){
-				var type = typeSpec.substring(0, i);
-				var returnType;
-				var argsSpec;
-				
-				var parts = typeSpec.split("->");
-				
-				var beforeReturnPart = parts[0];
-				
-				argsSpec = beforeReturnPart.substring(i+1, beforeReturnPart.length-1);
-				
-				var params = map(argsSpec.split(','), function(idx, arg){
-					return {type:arg};
-				});
-				
-				argSpec = {type: type, params:params};
-				
-				if(parts.length>1){
-					argSpec.returns = {type:parts[1]};
-				}
-			}else{
-				argSpec = {type: typeSpec};
-			}
-			return argSpec;
-		}
 		
 		var spec = {};
 		each(arguments, function(idx, line){

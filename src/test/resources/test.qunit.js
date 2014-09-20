@@ -21,10 +21,24 @@ define(["protocop"], function(protocop){
 
         // then
         ok(signature);
-        equal(signature.check(function(){}).matches, true);
-        equal(signature.check({}).matches, false);
-        equal(signature.check(9).matches, false);
-        equal(signature.check("").matches, false);
+        deepEqual(signature.check(function(){}), {matches:true, problems:[]});
+        deepEqual(signature.check({}), 
+                 {
+                    matches:false,
+                    problems:["expected type function but was object"]
+                 });
+        deepEqual(signature.check(9), {
+            "matches": false,
+            "problems": [
+              "expected type function but was number"
+            ]
+          });
+        deepEqual(signature.check(""), {
+            "matches": false,
+            "problems": [
+              "expected type function but was string"
+            ]
+          });
     });
     
     function assertThrows(expected, fn){
@@ -297,6 +311,26 @@ define(["protocop"], function(protocop){
 							jump:{type:"function", params:[{type:"string"}]}
 						   });
 	});
+	
+	
+   test("compile standalone function", function(){
+        // given
+        var types = protocop.createTypeSystem();
+
+
+        // when
+        var signature = types.compile(
+                "function(string)->number"
+        );
+        
+        // then
+        var problems = signature.check(function(){});
+
+        deepEqual(problems, {
+              "matches": true,
+              "problems": []
+            });
+    });
 	
 	test("compile", function(){
 		// given
