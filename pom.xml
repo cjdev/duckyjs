@@ -1,37 +1,38 @@
-<project>
-	<modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.cj.protocop</groupId>
-	<artifactId>protocop</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+    <groupId>com.cj.protocop</groupId>
+    <artifactId>protocop</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
 
-	<build>
-		<plugins>
-			<plugin>
-                        	<groupId>com.cj.qunit.mojo</groupId>
-                        	<artifactId>qunit-maven-plugin</artifactId>
-                        	<version>2.0.7</version>
-                        	<executions>
-                        	    <execution>
-                        	        <phase>test</phase>
-                        	        <goals>
-                        	            <goal>test</goal>
-                        	        </goals>
-                        	    </execution>
-                        	</executions>
-                    	</plugin>
-		     <plugin>
-		         <groupId>com.cj.jshintmojo</groupId>
-		         <artifactId>jshint-maven-plugin</artifactId>
-		         <version>0.0.10</version>
-		         <executions>
-		             <execution>
-		                 <goals>
-		                     <goal>lint</goal>
-		                 </goals>
-		             </execution>
-		         </executions>
-			</plugin>
-		</plugins>
-	</build>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.cj.qunit.mojo</groupId>
+                <artifactId>qunit-maven-plugin</artifactId>
+                <version>2.0.7</version>
+                <executions>
+                    <execution>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.cj.jshintmojo</groupId>
+                <artifactId>jshint-maven-plugin</artifactId>
+                <version>0.0.10</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>lint</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
