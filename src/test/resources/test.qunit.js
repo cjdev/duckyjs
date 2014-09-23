@@ -50,6 +50,19 @@ define(["protocop"], function(protocop){
         }
     }
     
+    test("you can refer to named types", function(){
+        // given
+        var types = protocop.createTypeSystem();
+        
+        // when
+        var type = types.register({
+            name:"Foo"
+        });
+        
+        // then
+        deepEqual(types.Foo, type);
+    });
+    
     test("wrapping a standalone function", function(){
         // given
         var types = protocop.createTypeSystem();
@@ -486,6 +499,21 @@ define(["protocop"], function(protocop){
 		}
 		
 	});
+	
+	test("you can name types", function(){
+	    // given
+	    var types = protocop.createTypeSystem();
+	    
+	    // when
+        var type = types.compile(
+                          '[CJComponent]',
+                          '    render');
+	    
+	    // then
+	    equal(type.name, "CJComponent");
+	    deepEqual(types.typeNamed("CJComponent"), type);
+	});
+	
 	
 	test("stub()", function(){
 		// given

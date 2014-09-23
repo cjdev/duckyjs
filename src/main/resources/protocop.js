@@ -182,12 +182,13 @@ var protocop = (function(){
 			check:check,
 			assert:assert,
 			dynamic:dynamic,
-			stub:makeStub
+			stub:makeStub,
+			name:spec.name
 		};
 	}
 
 	function createTypeSystem(){
-		
+		var typesByName = {};
 		var disabled = false;
 		
 		function isDisabled(){
@@ -205,12 +206,23 @@ var protocop = (function(){
 		        var fnSpec = compileTypeString(str);
 		        return makeSignature(fnSpec);
 		    }else{
-	            return makeType(parse.apply(null, arguments), isDisabled);
+	            return register(parse.apply(null, arguments));
 		    }
 		}
 		
 		function register(spec){
-			return makeType(spec, isDisabled);
+		    var type = makeType(spec, isDisabled);
+		    var name = type.name;
+		    if(name){
+		        typesByName[name] = type;
+		        
+		        if(publicInterface[name]){
+		            throw ("there's already something named \"" + name + "\"")
+		        }else{
+		            publicInterface[name] = type;
+		        }
+		    }
+			return type;
 		}
 		
 		function makeSignature(spec){
@@ -229,19 +241,26 @@ var protocop = (function(){
             };
 		}
 		
-		return {
-			register:register,
-			registerFn:function(params, returns){
-			    var spec = {
-			            type:"function",
-			            params:params,
-			            returns:returns
-			    };
-			    return makeSignature(spec);
-			},
-			compile:compile,
-			disable:disable
-		};
+		function typeNamed(name){
+		    return typesByName[name];
+		}
+		
+		var publicInterface = {
+            register:register,
+            registerFn:function(params, returns){
+                var spec = {
+                        type:"function",
+                        params:params,
+                        returns:returns
+                };
+                return makeSignature(spec);
+            },
+            compile:compile,
+            disable:disable,
+            typeNamed:typeNamed
+        };
+		
+		return publicInterface;
 	}	
 
 	const instanceofPattern = 'instanceof\\((.*)\\)';
@@ -293,6 +312,16 @@ var protocop = (function(){
 		
 		
 		var spec = {};
+		
+	      const classLinePattern = '\\[([a-zA-Z][a-zA-Z0-9]*)\\]';
+	        
+	        var maybeName = new RegExp(classLinePattern).exec(arguments[0].trim());
+	        
+	        if(maybeName){
+	            spec.name = maybeName[1];
+	        }
+	        
+		
 		each(arguments, function(idx, line){
 			var parts = line.split(":");
 			var propertyName;
