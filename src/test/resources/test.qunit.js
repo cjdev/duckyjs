@@ -223,6 +223,87 @@ define(["protocop"], function(protocop){
 		// then
 		deepEqual(exception, 'foo(): invalid return type: expected type string but was number');
 	});
+
+    test("fails fast when the expected constructor function doesn't exist", function(){
+
+        // given
+        var types = protocop.createTypeSystem();
+        var type = types.register({
+            foo:{
+                type:"function",
+                params:[{isa:"Foo"}]}
+        });
+        window.Foo = undefined;
+        function Bar(){}
+        
+        var o = type.stub({});
+
+        // when
+        var exception;
+        try{
+            o.foo(new Bar());
+        }catch(e){
+            exception = e;
+        }
+        
+        // then
+        deepEqual(exception, 'foo(): invalid argument #1: I was expecting something constructed by "Foo" but there is no function by that name.');
+    });
+	
+	test("arguments are rejected when they fail instanceof checks", function(){
+
+        // given
+        var types = protocop.createTypeSystem();
+        var type = types.register({
+            foo:{
+                type:"function",
+                params:[{isa:"Foo"}]}
+        });
+        window.Foo = function(){};
+        function Bar(){}
+        
+        var o = type.stub({});
+
+        // when
+        var exception;
+        try{
+            o.foo(new Bar());
+        }catch(e){
+            exception = e;
+        }
+        
+        // then
+        deepEqual(exception, 'foo(): invalid argument #1: expected something with "Foo" in its prototype chain');
+    });
+	
+	
+	test("arguments are accepted when they pass instanceof checks", function(){
+
+        // given
+        var types = protocop.createTypeSystem();
+        var type = types.register({
+            foo:{
+                type:"function",
+                params:[{isa:"Foo"}]}
+        });
+        window.Foo = function(){};
+        
+        var o = type.dynamic({
+            foo:function(a){}
+        });
+
+        // when
+        var exception;
+        try{
+            o.foo(new Foo());
+        }catch(e){
+            exception = e;
+        }
+        
+        // then
+        deepEqual(exception, undefined);
+    });
+	
 	
 
 	test("dynamic() leaves other properties alone", function(){
@@ -356,6 +437,29 @@ define(["protocop"], function(protocop){
 			  ]
 			});
 	});
+	
+	test("compile works with instanceof checks", function(){
+        // given
+        var types = protocop.createTypeSystem();
+
+
+        // when
+        var type = types.compile(
+                "when: instanceof(Date)"
+        );
+        
+        // then
+        var problems = type.check({
+            when:{}
+        });
+
+        deepEqual(problems, {
+              "matches": false,
+              "problems": [
+                '"when": expected something with "Date" in its prototype chain'
+              ]
+            });
+    });
 	
 	test("compile works with return types", function(){
 		// given

@@ -36,12 +36,27 @@ var protocop = (function(){
 	}
 	
 	function typeCheck(value, propSpec){
-        var valueType = typeof value;
-        if(valueType !== propSpec.type){
-            return 'expected type ' + propSpec.type + " but was " + valueType;
-        }else{
-            return false;
-        }
+	    if(propSpec.type){
+	        // check by typeof
+	        var valueType = typeof value;
+	        if(valueType !== propSpec.type){
+	            return 'expected type ' + propSpec.type + " but was " + valueType;
+	        }
+	    }
+	    
+	    if(propSpec.isa){
+	        var expectedInstanceOf = window[propSpec.isa];
+	        if(!expectedInstanceOf){
+	            return 'I was expecting something constructed by "' + propSpec.isa + '" but there is no function by that name.';
+	        }
+	        if(!(value instanceof expectedInstanceOf)){
+	            return 'expected something with "' + propSpec.isa + '" in its prototype chain';
+	        }
+	    }
+	    
+	    
+        return false;
+	    
     }
 	
 	function dynamicFnWrapper(name, undecorated, propSpec, checkIsDisabled){
@@ -93,12 +108,12 @@ var protocop = (function(){
 				if(!o.hasOwnProperty(name)){
 					problems.push('expected a property named "' + name + '"');
 				}else{
-					if(propSpec.type){
+					//if(propSpec.type){
 						var problem = typeCheck(o[name], propSpec);
 						if(problem){
 							problems.push('"' + name + '": ' + problem);
 						}
-					}
+					//}
 				}
 			});	
 
@@ -229,32 +244,48 @@ var protocop = (function(){
 		};
 	}	
 
+	const instanceofPattern = 'instanceof\\((.*)\\)';
+	
 	function compileTypeString(typeSpec){
 	    var argSpec;
+	    console.log("TYPE: " + typeSpec)
 	    var i = typeSpec.indexOf('(');
 	    if(i>0){
 	        var type = typeSpec.substring(0, i);
-	        var returnType;
-	        var argsSpec;
+	        console.log('   type: ' + type)
 	        
-	        var parts = typeSpec.split("->");
+//	        var myString = "something format_abc";
+//            var myRegexp = /(?:^|\s)format_(.*?)(?:\s|$)/g;
+//            var match = myRegexp.exec(myString);
+//            alert(match[1])
 	        
-	        var beforeReturnPart = parts[0];
-	        
-	        argsSpec = beforeReturnPart.substring(i+1, beforeReturnPart.length-1);
-	        
-	        var params = map(argsSpec.split(','), function(idx, arg){
-	            return {type:arg};
-	        });
-	        
-	        argSpec = {type: type, params:params};
-	        
-	        if(parts.length>1){
-	            argSpec.returns = {type:parts[1]};
+	        var instanceofMatch = new RegExp(instanceofPattern).exec(typeSpec.trim());
+	        console.log("match", instanceofMatch)
+	        if(instanceofMatch){
+                argSpec = {isa:instanceofMatch[1]}
+	        }else{
+	            var returnType;
+	            var argsSpec;
+	            
+	            var parts = typeSpec.split("->");
+	            
+	            var beforeReturnPart = parts[0];
+	            
+	            argsSpec = beforeReturnPart.substring(i+1, beforeReturnPart.length-1);
+	            
+	            var params = map(argsSpec.split(','), function(idx, arg){
+	                return {type:arg};
+	            });
+	            
+	            argSpec = {type: type, params:params};
+	            
+	            if(parts.length>1){
+	                argSpec.returns = {type:parts[1]};
+	            }
 	        }
 	    }else{
-	        argSpec = {type: typeSpec};
-	    }
+            argSpec = {type: typeSpec};
+        }
 	    return argSpec;
 	}
 	
@@ -265,6 +296,7 @@ var protocop = (function(){
 		each(arguments, function(idx, line){
 			var parts = line.split(":");
 			var propertyName;
+			var propertySpec;
 			
 			if(parts.length>1){
 				propertyName = parts[0];
