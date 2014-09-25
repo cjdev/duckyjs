@@ -1,5 +1,5 @@
 /*jshint smarttabs:true */
-define(["types!foo"], function(foo){
+define(["types!foo", "types!MakeFoo"], function(foo, MakeFoo_protocol){
     
     test("require plugin works", function(){
         //then
@@ -9,6 +9,10 @@ define(["types!foo"], function(foo){
         deepEqual(problems, {matches:false, problems:[
                                 'expected a property named "name"',
                                 'expected a property named "  sayHi"']});
+        
+        var makeFoo = MakeFoo_protocol.dynamic(function(){});
+        
+//        makeFoo("");
     });
     
 });
