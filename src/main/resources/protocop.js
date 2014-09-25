@@ -104,7 +104,6 @@ var protocop = (function(){
             var matches = true, problems=[];
 
             each(spec, function(name, propSpec){
-
                 if(!o.hasOwnProperty(name)){
                     problems.push('expected a property named "' + name + '"');
                 }else{
@@ -202,7 +201,6 @@ var protocop = (function(){
         function compile(){
             if(arguments.length==1 && arguments[0].toString().indexOf("function(") === 0){
                 var str = arguments[0];
-                console.log(str);
                 var fnSpec = compileTypeString(str);
                 return makeSignature(fnSpec);
             }else{
@@ -272,7 +270,6 @@ var protocop = (function(){
             var type = typeSpec.substring(0, i);
             
             var instanceofMatch = new RegExp(instanceofPattern).exec(typeSpec.trim());
-            console.log("match", instanceofMatch);
             if(instanceofMatch){
                 argSpec = {isa:instanceofMatch[1]};
             }else{
@@ -300,22 +297,22 @@ var protocop = (function(){
         }
         return argSpec;
     }
+    var classLinePattern = '\\[([a-zA-Z][a-zA-Z0-9]*)\\]';
 
     function parse(){
-
-
+        
         var spec = {};
-
-        var classLinePattern = '\\[([a-zA-Z][a-zA-Z0-9]*)\\]';
-
+        
         var maybeName = new RegExp(classLinePattern).exec(arguments[0].trim());
-
+        
         if(maybeName){
             spec.name = maybeName[1];
+            lines = Array.prototype.slice.apply(arguments, [1] );
+        }else{
+            lines = arguments;
         }
-
-
-        each(arguments, function(idx, line){
+        
+        each(lines, function(idx, line){
             var parts = line.split(":");
             var propertyName;
             var propertySpec;

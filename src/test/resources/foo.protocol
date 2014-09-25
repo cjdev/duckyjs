@@ -1,0 +1,2 @@
+[Foo]
+  sayHi:function(string)->string
