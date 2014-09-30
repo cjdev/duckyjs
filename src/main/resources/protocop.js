@@ -35,157 +35,6 @@ var protocop = (function(){
         return str;
     }
 
-    function typeCheck(value, propSpec){
-        if(propSpec.type){
-            // check by typeof
-            var valueType = typeof value;
-            if(valueType !== propSpec.type){
-                return 'expected type ' + propSpec.type + " but was " + valueType;
-            }
-        }
-
-        if(propSpec.isa){
-            var expectedInstanceOf = window[propSpec.isa];
-            if(!expectedInstanceOf){
-                return 'I was expecting something constructed by "' + propSpec.isa + '" but there is no function by that name.';
-            }
-            if(!(value instanceof expectedInstanceOf)){
-                return 'expected something with "' + propSpec.isa + '" in its prototype chain';
-            }
-        }
-
-
-        return false;
-
-    }
-
-    function dynamicFnWrapper(name, undecorated, propSpec, checkIsDisabled){
-        return function(){
-            var problems = [];
-            if(arguments.length!=propSpec.params.length){
-                problems.push("arity problem: expected " + propSpec.params.length + " but was " + arguments.length);
-            }
-
-            each(arguments, function(idx, value){
-                var num = idx + 1;
-                var paramSpec = propSpec.params[idx];
-                if(paramSpec){
-                    var problem = typeCheck(value, propSpec.params[idx]);
-                    if(problem){
-                        problems.push(name + "(): invalid argument #" + num + ": " + problem);
-                    }
-                }
-            });
-            if((!checkIsDisabled()) && problems.length>0){
-                throw mkstring(problems, "\n");
-            }else{
-                var result = undecorated.apply(this, arguments);
-                var returnProblem;
-
-                if(propSpec.returns){
-                    returnProblem = typeCheck(result, propSpec.returns);
-                }
-
-                if((!checkIsDisabled()) && returnProblem){
-                    throw (name + "(): invalid return type: " + returnProblem);
-                }else{
-                    return result;
-                }
-            }
-        };
-    }
-
-    function makeType(spec, checkIsDisabled){
-
-
-
-        function check(o){
-            if(checkIsDisabled()) return {matches:true, problems:[]};
-            var matches = true, problems=[];
-
-            each(spec, function(name, propSpec){
-                if(!o.hasOwnProperty(name)){
-                    problems.push('expected a property named "' + name + '"');
-                }else{
-                    //if(propSpec.type){
-                    var problem = typeCheck(o[name], propSpec);
-                    if(problem){
-                        problems.push('"' + name + '": ' + problem);
-                    }
-                    //}
-                }
-            });	
-
-            return {
-                matches:problems.length === 0,
-                problems:problems
-            };
-        }
-
-        function assert(o){
-            if(checkIsDisabled()) return o;
-
-            var problemDescriptions = map(check(o).problems, function(idx, problem){
-                var num = idx + 1;
-                return "    " + num + ": " + problem;
-            });
-
-            if(problemDescriptions.length > 0){
-                throw "Found " + problemDescriptions.length + " interface violations:\n" + mkstring(problemDescriptions, "\n");
-            }
-
-            return o;
-        }
-
-        function makeStub(o){
-            var stub = {};
-
-            stub.prototype = o.prototype;
-            each(o, function(name, value){
-                stub[name] = value;
-            });
-
-            each(spec, function(name, propSpec){
-                if(stub.hasOwnProperty(name)) return;
-
-                var stubValue;
-                if(propSpec === "*" || propSpec.type !== "function"){
-                    stubValue = ("stub property not implemented: " + name);
-                }else {
-                    stubValue = function(){
-                        throw "stub method not implemented: " + name + "()";
-                    };
-                }
-                stub[name] = stubValue;
-            });
-            return dynamic(stub);
-        }
-
-
-
-        function dynamic(o){
-            assert(o);
-            each(spec, function(name, propSpec){
-
-                if(o.hasOwnProperty(name) && propSpec.params){
-                    var undecorated;
-
-                    undecorated = o[name];
-                    o[name] = dynamicFnWrapper(name, undecorated, propSpec, checkIsDisabled);
-                }
-            });
-            return o;
-        }
-
-        return {
-            check:check,
-            assert:assert,
-            dynamic:dynamic,
-            stub:makeStub,
-            name:spec.name
-        };
-    }
-
     function createTypeSystem(){
         var typesByName = {};
         var disabled = false;
@@ -198,22 +47,216 @@ var protocop = (function(){
             disabled = true;
         }
 
+        
+
+        function typeCheck(value, propSpec){
+            if(propSpec.type){
+                
+             // check by typeof
+                var valueType = typeof value;
+                if(valueType !== propSpec.type){
+                    var existingType = typesByName[propSpec.type];
+                    if(existingType){
+                    }else{
+                        return 'expected type ' + propSpec.type + " but was " + valueType;
+                    }
+                    
+                }
+                
+            }
+
+            if(propSpec.isa){
+                var expectedInstanceOf = window[propSpec.isa];
+                if(!expectedInstanceOf){
+                    return 'I was expecting something constructed by "' + propSpec.isa + '" but there is no function by that name.';
+                }
+                if(!(value instanceof expectedInstanceOf)){
+                    return 'expected something with "' + propSpec.isa + '" in its prototype chain';
+                }
+            }
+
+
+            return false;
+
+        }
+
+        function dynamicFnWrapper(protocolName, name, undecorated, propSpec, checkIsDisabled){
+            var prefix = "";
+            console.log("Protocol name: " + protocolName);
+            if(protocolName){
+                prefix = '"' + protocolName + '" protocol violation: ';
+            }
+            
+            if(name){
+                prefix = prefix + name + "(): ";
+            }else{
+                prefix = prefix + "anonymous function: ";
+            }
+            return function(){
+                
+                var problems = [];
+                if(arguments.length!=propSpec.params.length){
+                    problems.push(prefix +  "arity problem: expected " + propSpec.params.length + " but was " + arguments.length);
+                }
+
+                each(arguments, function(idx, value){
+                    var num = idx + 1;
+                    var paramSpec = propSpec.params[idx];
+                    if(paramSpec){
+                        var problem = typeCheck(value, propSpec.params[idx]);
+                        if(problem){
+                            problems.push(prefix + "invalid argument #" + num + ": " + problem);
+                        }
+                    }
+                });
+                if((!checkIsDisabled()) && problems.length>0){
+                    throw mkstring(problems, "\n");
+                }else{
+                    var result = undecorated.apply(this, arguments);
+                    var returnProblem;
+
+                    if(propSpec.returns){
+                        
+                        console.log("returns", propSpec.returns);
+                        
+                        returnProblem = typeCheck(result, propSpec.returns);
+                    }
+
+                    if((!checkIsDisabled()) && returnProblem){
+                        throw (prefix + "invalid return type: " + returnProblem);
+                    }else{
+                        var typeName = (propSpec.returns && propSpec.returns.type) ? propSpec.returns.type : undefined;
+                        var returnType = typeName ? typesByName[typeName] : undefined;
+                        
+                        if(returnType){
+                            return returnType.dynamic(result);
+                        }else{
+                            return result;
+                        }
+                    }
+                }
+            };
+        }
+
+        function makeType(name, spec, checkIsDisabled){
+
+            function check(o){
+                if(checkIsDisabled()) return {matches:true, problems:[]};
+                var matches = true, problems=[];
+                var prefix = "";
+                if(name){
+                    prefix = '"' + name + '" protocol violation: ';
+                }
+                each(spec, function(name, propSpec){
+                    if(!o.hasOwnProperty(name)){
+                        problems.push(prefix + 'expected a property named "' + name + '"');
+                    }else{
+                        //if(propSpec.type){
+                        var problem = typeCheck(o[name], propSpec);
+                        if(problem){
+                            problems.push(prefix + '"' + name + '": ' + problem);
+                        }
+                        //}
+                    }
+                }); 
+
+                return {
+                    matches:problems.length === 0,
+                    problems:problems
+                };
+            }
+
+            function assert(o){
+                if(checkIsDisabled()) return o;
+
+                var problemDescriptions = map(check(o).problems, function(idx, problem){
+                    var num = idx + 1;
+                    return "    " + num + ": " + problem;
+                });
+
+                if(problemDescriptions.length > 0){
+                    throw "Found " + problemDescriptions.length + " interface violations:\n" + mkstring(problemDescriptions, "\n");
+                }
+
+                return o;
+            }
+
+            function makeStub(o){
+                var stub = {};
+
+                stub.prototype = o.prototype;
+                each(o, function(name, value){
+                    stub[name] = value;
+                });
+
+                each(spec, function(name, propSpec){
+                    if(stub.hasOwnProperty(name)) return;
+
+                    var stubValue;
+                    if(propSpec === "*" || propSpec.type !== "function"){
+                        stubValue = ("stub property not implemented: " + name);
+                    }else {
+                        stubValue = function(){
+                            throw "stub method not implemented: " + name + "()";
+                        };
+                    }
+                    stub[name] = stubValue;
+                });
+                return dynamic(stub);
+            }
+
+
+
+            function dynamic(o){
+                var protocolName = name;
+                assert(o);
+                each(spec, function(name, propSpec){
+
+                    if(o.hasOwnProperty(name) && propSpec.params){
+                        var undecorated;
+
+                        undecorated = o[name];
+                        o[name] = dynamicFnWrapper(protocolName, name, undecorated, propSpec, checkIsDisabled);
+                    }
+                });
+                return o;
+            }
+
+            return {
+                check:check,
+                assert:assert,
+                dynamic:dynamic,
+                stub:makeStub,
+                name:name
+            };
+        }
+
+        
+        
         function compile(){
             if(arguments.length==1 && arguments[0].toString().indexOf("function(") === 0){
                 var str = arguments[0];
                 var fnSpec = compileTypeString(str);
                 return makeSignature(fnSpec);
             }else{
-                return register(parse.apply(null, arguments));
+                var namedSpec = parse.apply(null, arguments);
+                console.log("parsed", namedSpec);
+                return register(namedSpec.name, namedSpec.spec);
             }
         }
 
-        function register(spec){
-            var type = makeType(spec, isDisabled);
-            var name = type.name;
+        function register(){
+            var name, spec;
+            if(arguments.length==2){
+                name = arguments[0];
+                spec = arguments[1];
+            }else{
+                spec = arguments[0];
+            }
+            
+            var type = makeType(name, spec, isDisabled);
             if(name){
                 typesByName[name] = type;
-
                 if(publicInterface[name]){
                     throw ("there's already something named \"" + name + "\"");
                 }else{
@@ -226,7 +269,7 @@ var protocop = (function(){
         function makeSignature(spec){
             return {
                 check:function(candidate){
-                    var problemDescription = typeCheck(candidate, spec);
+                    var problemDescription = typeCheck(candidate, spec, typesByName);
                     if(problemDescription){
                         return {matches:false, problems:[problemDescription]};
                     }else{
@@ -234,7 +277,7 @@ var protocop = (function(){
                     }
                 },
                 dynamic:function(fn){
-                    return dynamicFnWrapper("", fn, spec, isDisabled);
+                    return dynamicFnWrapper(undefined, "", fn, spec, isDisabled);
                 }
             };
         }
@@ -306,7 +349,6 @@ var protocop = (function(){
         var maybeName = new RegExp(classLinePattern).exec(arguments[0].trim());
         
         if(maybeName){
-            spec.name = maybeName[1];
             lines = Array.prototype.slice.apply(arguments, [1] );
         }else{
             lines = arguments;
@@ -318,17 +360,24 @@ var protocop = (function(){
             var propertySpec;
 
             if(parts.length>1){
-                propertyName = parts[0];
+                propertyName = parts[0].trim();
                 propertySpec = compileTypeString(parts[1]);
             }else{
-                propertyName = line;
+                propertyName = line.trim();
                 propertySpec = "*";
             }
 
             spec[propertyName] = propertySpec;
         });
-
-        return spec;
+        
+        var name;
+        if(maybeName===null){
+            name = undefined;
+        }else{
+            name = maybeName[1];
+        }
+        return {name:name,
+                spec:spec};
     }
 
     return {

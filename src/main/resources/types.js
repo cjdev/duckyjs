@@ -9,7 +9,9 @@ define(['protocop'], function(protocop){
             if (xhr.readyState === 4) {
                 var lines = xhr.responseText.split("\n");
                 if(lines === undefined) throw "there is nothing in " + filename;
-                var type = types.compile.apply(null,lines);
+                var namedSpec = protocop.parse.apply(null,lines);
+                
+                var type = types.register(name, namedSpec.spec);
                 onload(type);
             }
           };

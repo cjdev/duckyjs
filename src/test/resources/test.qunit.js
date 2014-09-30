@@ -55,14 +55,154 @@ define(["protocop"], function(protocop){
         var types = protocop.createTypeSystem();
 
         // when
-        var type = types.register({
-            name:"Foo"
-        });
+        var type = types.register("Foo", {});
 
         // then
         deepEqual(types.Foo, type);
     });
+    
+    
+    test("type names appear in static type errors", function(){
+        // given
+        var types = protocop.createTypeSystem();
 
+        var type = types.register("Foo", {
+            name:{type:"string"},
+            age:{type:"number"}
+        });
+        
+        var invalidObject = {
+            age:"yes"
+        };
+        
+        // when
+        var result = type.check(invalidObject);
+
+        // then
+        deepEqual(result, {
+            "matches": false,
+            "problems": [
+              "\"Foo\" protocol violation: expected a property named \"name\"",
+              "\"Foo\" protocol violation: \"age\": expected type number but was string"
+            ]
+          });
+    });
+    
+    test("type names appear in dynamic errors", function(){
+        // given
+        var types = protocop.createTypeSystem();
+
+        var type = types.register("Foo", {
+            sayHi:{
+                type:"function",
+                params:[{type:"string"}],
+                returns:{type:"string"}}
+        });
+        
+        var wrapped = type.dynamic({
+            sayHi:function(){return 33;}
+        });
+        
+        // when
+        var error1 = captureError(function(){
+            wrapped.sayHi();
+        });
+        
+        var error2 = captureError(function(){
+            wrapped.sayHi(2);
+        });
+        
+        var error3 = captureError(function(){
+            wrapped.sayHi("stu");
+        });
+
+        // then
+        deepEqual(error1, "\"Foo\" protocol violation: sayHi(): arity problem: expected 1 but was 0");
+        deepEqual(error2, "\"Foo\" protocol violation: sayHi(): invalid argument #1: expected type string but was number");
+        deepEqual(error3, "\"Foo\" protocol violation: sayHi(): invalid return type: expected type string but was number");
+    });
+    
+    
+    function captureError(fn){
+        try{
+            fn();
+        }catch(e){
+            return e;
+        }
+    }
+
+    test("you can refer to named types from other protocols", function(){
+        // given
+        var types = protocop.createTypeSystem();
+        var barType = types.register("Bar", {
+            sayHi:{
+                type:"function",
+                params:[],
+                returns:{type:"string"}}
+        });
+        var fooType = types.register("Foo", {
+            makeBar:{
+                type:"function",
+                params:[],
+                returns:{type:"Bar"}}
+        });
+        
+        var foo = fooType.dynamic({
+            makeBar:function(){
+                return {
+                    sayHi:function(){
+                        return "Hello World";
+                    }
+                };
+            }
+        });
+        // when
+        var message = foo.makeBar().sayHi();
+
+        // then
+        deepEqual(message, "Hello World");
+    });
+    
+    
+    test("dynamic wrappers follow recursively", function(){
+        // given
+        var types = protocop.createTypeSystem();
+        var barType = types.register("Bar", {
+            sayHi:{
+                type:"function",
+                params:[],
+                returns:{type:"string"}}
+        });
+        var fooType = types.register("Foo", {
+            makeBar:{
+                type:"function",
+                params:[],
+                returns:{type:"Bar"}}
+        });
+        
+        var foo = fooType.dynamic({
+            makeBar:function(){
+                return {
+                    sayHi:function(){
+                        return "Hello World";
+                    }
+                };
+            }
+        });
+        var bar = foo.makeBar();
+        // when
+        var error;
+        try{
+            bar.sayHi("invalid argument");
+        }catch(e){
+            error = e;
+        }
+
+        // then
+        deepEqual(error, "\"Bar\" protocol violation: sayHi(): arity problem: expected 0 but was 1");
+    });
+    
+    
     test("wrapping a standalone function", function(){
         // given
         var types = protocop.createTypeSystem();
@@ -71,15 +211,15 @@ define(["protocop"], function(protocop){
         var signature = types.registerFn([{type:"string"}],{type:"string"});
 
         // then
-        assertThrows("arity problem: expected 1 but was 0", function(){
+        assertThrows("anonymous function: arity problem: expected 1 but was 0", function(){
             var wrapper= signature.dynamic(function(){});
             wrapper();
         });
-        assertThrows("(): invalid argument #1: expected type string but was number", function(){
+        assertThrows("anonymous function: invalid argument #1: expected type string but was number", function(){
             var wrapper= signature.dynamic(function(){});
             wrapper(1);
         });
-        assertThrows("(): invalid return type: expected type string but was number", function(){
+        assertThrows("anonymous function: invalid return type: expected type string but was number", function(){
             var wrapper= signature.dynamic(function(){return 1;});
             wrapper("input");
         });
@@ -182,7 +322,7 @@ define(["protocop"], function(protocop){
         }
 
         // then
-        deepEqual(exception, "arity problem: expected 1 but was 0");
+        deepEqual(exception, "foo(): arity problem: expected 1 but was 0");
     });
 
     test("dynamic() checks argument types", function(){
@@ -500,7 +640,7 @@ define(["protocop"], function(protocop){
             animal.respond();
             fail("shouldn't get here because we passed an invalid number of arguments");
         }catch(e){
-            equal(e, "arity problem: expected 1 but was 0");
+            equal(e, "respond(): arity problem: expected 1 but was 0");
         }
 
         try{

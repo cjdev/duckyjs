@@ -53,12 +53,31 @@ define(["protocop"], function(protocop){
 		);
 		
 		// then
-		deepEqual(result, {
-							crawl:"*",
-							walk:{type:"function"},
-							jump:{type:"function", params:[{type:"string"}]}
-						   });
+		deepEqual(result, {name:undefined,
+		                   spec:{
+                                crawl:"*",
+                                walk:{type:"function"},
+                                jump:{type:"function", params:[{type:"string"}]}}});
 	});
+	
+	
+   test("trims leading whitespace", function(){
+
+        // when
+        var result = protocop.parse(
+                " crawl",
+                "  walk:function",
+                "        jump:function(string)"
+        );
+        
+        // then
+        deepEqual(result, {name:undefined,
+                           spec:{
+                                crawl:"*",
+                                walk:{type:"function"},
+                                jump:{type:"function", params:[{type:"string"}]}
+                               }});
+    });
 	
 	
    test("compile standalone function", function(){
