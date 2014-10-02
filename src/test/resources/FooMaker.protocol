@@ -1,1 +1,1 @@
-function(string)->Foo
+function(string)->{Foo}

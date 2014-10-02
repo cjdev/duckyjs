@@ -115,6 +115,29 @@ define(["protocop"], function(protocop){
               "problems": []
             });
     });
+   
+   test("parse anonymous standalone function", function(){
+       // given
+       var functionDef = "function(string)->number";
+
+       // when
+       var spec = protocop.parse(functionDef);
+       
+       // then
+       deepEqual(spec, 
+          {name:undefined, 
+           spec:{
+             type:"function",
+             params: [
+               {
+                 "type": "string"
+               }
+             ],
+             returns: {
+               "type": "number"
+             }
+           }});
+   });
 	
 	test("compile", function(){
 		// given

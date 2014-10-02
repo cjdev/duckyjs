@@ -16,8 +16,11 @@ var protocop = (function(){
             }
         }
     }
-
-
+    
+    function looksLikeStandaloneFunctionDef(lines){
+        return lines.length==1 && lines[0].toString().indexOf("function(") === 0;
+    }
+    
     function map(items, fn){
         var results = [];
         each(items, function(idx, item){
@@ -229,9 +232,10 @@ var protocop = (function(){
         }
 
         
+
         
         function compile(){
-            if(arguments.length==1 && arguments[0].toString().indexOf("function(") === 0){
+            if(looksLikeStandaloneFunctionDef(arguments)){
                 var str = arguments[0];
                 var fnSpec = compileTypeString(str);
                 return makeSignature(fnSpec);
@@ -353,6 +357,19 @@ var protocop = (function(){
     var classLinePattern = '\\[([a-zA-Z][a-zA-Z0-9]*)\\]';
 
     function parse(){
+        var nonBlankArgs = map(arguments, function(idx, next){
+            return next.trim();
+        }).filter(function(i){
+            return i!=="";
+        });
+        
+        if(looksLikeStandaloneFunctionDef(nonBlankArgs)){
+            var fnSpec = compileTypeString(nonBlankArgs[0]);
+            return {
+                name:undefined,
+                spec:fnSpec
+            };
+        }
         
         var spec = {};
         

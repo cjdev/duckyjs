@@ -3,55 +3,96 @@ define(['protocop'], function(protocop){
     var types = protocop.createTypeSystem();
     
     function load(name, parentRequire, onload, config){
+        function handleLoadError(err){
+            onload.error(err);
+        }
+        
         var preLoadedType = types[name];
         if(preLoadedType){
             onload(type);
         }else{
-            getProtocol(name, function(name, spec, type){
-                var protocolNames = getDependentProtocols(spec);
-                if(protocolNames.length===0) {
-                    onload(type);
+            
+            getProtocolText(name, function(text){
+                var namedSpec = parseProtocol(text);
+                var spec = namedSpec.spec;
+                if(spec.type==="function"){
+                    var fnType = types.registerFn(spec.params, spec.returns);
+                    onload(fnType);
                 }else{
-                    var resolved = [];
-                    
-                    each(protocolNames, function(idx, protocolName){
-                        getProtocol(protocolName, function(name, spec, dependentType){
-                            resolved.push(name);
-                            
-                            if(resolved.length === protocolNames.length){
-                                onload(type);            
-                            }
-                        });
+                    var type = registerProtocol(name, namedSpec);
+                    var protocolNames = getDependentProtocolsForProtocolSpec(spec);
+                    getProtocols(protocolNames, function(){
+                        onload(type);
                     });
                 }
-                
-            });
+            }, handleLoadError);
         }
     }
     
-    function getProtocol(name, callback){
-        get(name + ".protocol", function(responseText){
-            var lines = responseText.split("\n");
-            if(lines === undefined) throw "there is nothing in " + filename;
-            var namedSpec = protocop.parse.apply(null,lines);
-            var type = types.register(name, namedSpec.spec);
+    function getProtocols(protocolNames, onSuccess, handleError){
+        if(protocolNames.length===0) {
+            onSuccess();
+        }else{
+            var resolved = [];
             
-            callback(name, namedSpec.spec, type);
-        });
+            each(protocolNames, function(idx, protocolName){
+                
+                function successHandler(name, spec, dependentType){
+                    resolved.push(name);
+                    
+                    if(resolved.length === protocolNames.length){
+                        onSuccess();
+                    }
+                }
+                
+                getProtocol(protocolName, successHandler, handleError);
+            });
+        }
+    }
+    function getProtocolText(name, callback, errorHandler){
+        get(name + ".protocol", callback, errorHandler);
     }
     
-    function get(uri, onSuccess){
+    function parseProtocol(text){
+        var lines = text.split("\n");
+        if(lines === undefined) throw "there is nothing in " + filename;
+        var namedSpec = protocop.parse.apply(null,lines);
+        return namedSpec;
+    }
+    
+    function registerProtocol(name, namedSpec){
+        var type = types.register(name, namedSpec.spec);
+        return type;
+    }
+    
+    function getProtocol(name, callback, errorHandler){
+        
+        function onSuccess(responseText){
+            var namedSpec = parseProtocol(responseText);
+            var type = registerProtocol(name, namedSpec);
+            
+            callback(name, namedSpec.spec, type);
+        }
+        
+        get(name + ".protocol", onSuccess, errorHandler);
+    }
+    
+    function get(uri, onSuccess, onError){
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function(){
             if (xhr.readyState === 4) {
-                onSuccess(xhr.responseText);
+                if(xhr.status===200){
+                    onSuccess(xhr.responseText);
+                }else{
+                    onError("server returned " + xhr.status + " for " + uri);
+                }
             }
           };
         xhr.open("GET", uri, true);
         xhr.send();
     }
     
-    function getDependentProtocols(spec){
+    function getDependentProtocolsForProtocolSpec(spec){
         var results = [];
         
         each(spec, function(name, propSpec){
@@ -69,7 +110,6 @@ define(['protocop'], function(protocop){
                 }
             }
         });
-        
         
         return results;
     }
