@@ -48,21 +48,22 @@ var protocop = (function(){
         }
 
         
-
         function typeCheck(value, propSpec){
+            var protocolName = propSpec.protocol;
+            if(protocolName){
+                var existingType = typesByName[protocolName];
+                var result = existingType.check(value);
+                if(!result.matches){
+                    return "Doesn't comply with \"" + protocolName + "\" protocol: " + result.problems;
+                }
+            }
+            
             if(propSpec.type){
-                
-             // check by typeof
+                // check by typeof
                 var valueType = typeof value;
                 if(valueType !== propSpec.type){
-                    var existingType = typesByName[propSpec.type];
-                    if(existingType){
-                    }else{
-                        return 'expected type ' + propSpec.type + " but was " + valueType;
-                    }
-                    
+                  return 'expected type ' + propSpec.type + " but was " + valueType;
                 }
-                
             }
 
             if(propSpec.isa){
@@ -82,7 +83,6 @@ var protocop = (function(){
 
         function dynamicFnWrapper(protocolName, name, undecorated, propSpec, checkIsDisabled){
             var prefix = "";
-            console.log("Protocol name: " + protocolName);
             if(protocolName){
                 prefix = '"' + protocolName + '" protocol violation: ';
             }
@@ -116,17 +116,14 @@ var protocop = (function(){
                     var returnProblem;
 
                     if(propSpec.returns){
-                        
-                        console.log("returns", propSpec.returns);
-                        
                         returnProblem = typeCheck(result, propSpec.returns);
                     }
 
                     if((!checkIsDisabled()) && returnProblem){
                         throw (prefix + "invalid return type: " + returnProblem);
                     }else{
-                        var typeName = (propSpec.returns && propSpec.returns.type) ? propSpec.returns.type : undefined;
-                        var returnType = typeName ? typesByName[typeName] : undefined;
+                        var protocolName = (propSpec.returns && propSpec.returns.protocol) ? propSpec.returns.protocol : undefined;
+                        var returnType = protocolName ? typesByName[protocolName] : undefined;
                         
                         if(returnType){
                             return returnType.dynamic(result);
@@ -240,7 +237,6 @@ var protocop = (function(){
                 return makeSignature(fnSpec);
             }else{
                 var namedSpec = parse.apply(null, arguments);
-                console.log("parsed", namedSpec);
                 return register(namedSpec.name, namedSpec.spec);
             }
         }
@@ -305,6 +301,7 @@ var protocop = (function(){
     }	
 
     var instanceofPattern = 'instanceof\\((.*)\\)';
+    var protocolReferencePattern = '\\{(.*)\\}';
 
     function compileTypeString(typeSpec){
         var argSpec;
@@ -315,7 +312,7 @@ var protocop = (function(){
             var instanceofMatch = new RegExp(instanceofPattern).exec(typeSpec.trim());
             if(instanceofMatch){
                 argSpec = {isa:instanceofMatch[1]};
-            }else{
+            }else {
                 var returnType;
                 var argsSpec;
 
@@ -326,17 +323,30 @@ var protocop = (function(){
                 argsSpec = beforeReturnPart.substring(i+1, beforeReturnPart.length-1);
 
                 var params = map(argsSpec.split(','), function(idx, arg){
-                    return {type:arg};
+                    if(arg.trim()!==""){
+                        var t = compileTypeString(arg);
+                        return t;
+                    }else{
+                        return undefined;
+                    }
+                }).filter(function(i){
+                    return typeof i === "object";
                 });
 
                 argSpec = {type: type, params:params};
 
                 if(parts.length>1){
-                    argSpec.returns = {type:parts[1]};
+                    argSpec.returns = compileTypeString(parts[1]);
                 }
             }
         }else{
-            argSpec = {type: typeSpec};
+
+            var protocolReferencePatternMatch = new RegExp(protocolReferencePattern).exec(typeSpec.trim());
+            if(protocolReferencePatternMatch){
+                argSpec = {protocol:protocolReferencePatternMatch[1]};
+            }else{
+                argSpec = {type: typeSpec};
+            }
         }
         return argSpec;
     }

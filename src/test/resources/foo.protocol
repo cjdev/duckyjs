@@ -1,2 +1,2 @@
 sayHi:function(string)->string
-makeBar:function(number)->Bar
+makeBar:function(number)->{bar}

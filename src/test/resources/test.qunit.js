@@ -144,7 +144,7 @@ define(["protocop"], function(protocop){
             makeBar:{
                 type:"function",
                 params:[],
-                returns:{type:"Bar"}}
+                returns:{protocol:"Bar"}}
         });
         
         var foo = fooType.dynamic({
@@ -177,7 +177,10 @@ define(["protocop"], function(protocop){
             makeBar:{
                 type:"function",
                 params:[],
-                returns:{type:"Bar"}}
+                returns:{protocol:"Bar"}},
+            takeBar:{
+                type:"function",
+                params:[{protocol:"Bar"}]}
         });
         
         var foo = fooType.dynamic({
@@ -187,19 +190,21 @@ define(["protocop"], function(protocop){
                         return "Hello World";
                     }
                 };
-            }
+            },
+            takeBar:function(){}
         });
         var bar = foo.makeBar();
         // when
-        var error;
-        try{
+        var error1 = captureError(function(){
             bar.sayHi("invalid argument");
-        }catch(e){
-            error = e;
-        }
+        });
+        var error2 = captureError(function(){
+            foo.takeBar({});
+        });
 
         // then
-        deepEqual(error, "\"Bar\" protocol violation: sayHi(): arity problem: expected 0 but was 1");
+        deepEqual(error1, "\"Bar\" protocol violation: sayHi(): arity problem: expected 0 but was 1");
+        deepEqual(error2, "\"Foo\" protocol violation: takeBar(): invalid argument #1: Doesn't comply with \"Bar\" protocol: \"Bar\" protocol violation: expected a property named \"sayHi\"");
     });
     
     

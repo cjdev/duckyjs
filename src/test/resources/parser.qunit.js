@@ -79,7 +79,24 @@ define(["protocop"], function(protocop){
                                }});
     });
 	
-	
+   test("parses field protocol dependencies", function(){
+       
+       // when
+       var result = protocop.parse(
+          "myBar:{Bar}",
+          "eatBar:function({Bar})",
+          "makeBar:function()->{Bar}"
+       );
+       
+       // then
+       deepEqual(result, {name:undefined,
+                          spec:{
+                              myBar:{protocol:"Bar"},
+                              eatBar:{type:"function", params:[{protocol:"Bar"}]},
+                              makeBar:{type:"function", params:[], returns:{protocol:"Bar"}}
+                              }});
+   });
+   
    test("compile standalone function", function(){
         // given
         var types = protocop.createTypeSystem();
