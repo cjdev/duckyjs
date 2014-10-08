@@ -85,7 +85,7 @@ var protocop = (function(){
         }
 
         function dynamicFnWrapper(protocolName, name, undecorated, propSpec, checkIsDisabled){
-            var prefix = "";
+            var prefix = "", wrapper;
             if(protocolName){
                 prefix = '"' + protocolName + '" protocol violation: ';
             }
@@ -95,27 +95,39 @@ var protocop = (function(){
             }else{
                 prefix = prefix + "anonymous function: ";
             }
-            return function(){
-                
+            
+            wrapper =  function(){
+                var args = arguments === undefined ? [] : Array.prototype.slice.call(arguments, 0);
+                var argsToUse = [];
                 var problems = [];
-                if(arguments.length!=propSpec.params.length){
-                    problems.push(prefix +  "arity problem: expected " + propSpec.params.length + " but was " + arguments.length);
+                
+                var numArguments = args ? args.length : 0;
+                
+                if(args.length !== propSpec.params.length){
+                    problems.push(prefix +  "arity problem: expected " + propSpec.params.length + " but was " + numArguments);
                 }
 
-                each(arguments, function(idx, value){
+                each(args, function(idx, value){
                     var num = idx + 1;
                     var paramSpec = propSpec.params[idx];
+                    argsToUse[idx] = args[idx];
                     if(paramSpec){
-                        var problem = typeCheck(value, propSpec.params[idx]);
+                        var problem = typeCheck(value, paramSpec);
                         if(problem){
                             problems.push(prefix + "invalid argument #" + num + ": " + problem);
+                        }
+                        if(paramSpec.signature){
+                            var sig = typesByName[paramSpec.signature];
+                            
+                            argsToUse[idx] = dynamicFnWrapper("", paramSpec.signature, args[idx], sig.spec, checkIsDisabled);
                         }
                     }
                 });
                 if((!checkIsDisabled()) && problems.length>0){
                     throw mkstring(problems, "\n");
                 }else{
-                    var result = undecorated.apply(this, arguments);
+
+                    var result = undecorated.apply(this, argsToUse);
                     var returnProblem;
 
                     if(propSpec.returns){
@@ -125,8 +137,8 @@ var protocop = (function(){
                     if((!checkIsDisabled()) && returnProblem){
                         throw (prefix + "invalid return type: " + returnProblem);
                     }else{
-                        var protocolName = (propSpec.returns && propSpec.returns.protocol) ? propSpec.returns.protocol : undefined;
-                        var returnType = protocolName ? typesByName[protocolName] : undefined;
+                        var propProtocolName = (propSpec.returns && propSpec.returns.protocol) ? propSpec.returns.protocol : undefined;
+                        var returnType = propProtocolName ? typesByName[propProtocolName] : undefined;
                         
                         if(returnType){
                             return returnType.dynamic(result);
@@ -136,6 +148,10 @@ var protocop = (function(){
                     }
                 }
             };
+            
+//            wrapper.info = {args:args};
+            
+            return wrapper;
         }
 
         function makeType(name, spec, checkIsDisabled){
@@ -238,7 +254,7 @@ var protocop = (function(){
             if(looksLikeStandaloneFunctionDef(arguments)){
                 var str = arguments[0];
                 var fnSpec = compileTypeString(str);
-                return makeSignature(fnSpec);
+                return makeSignature(undefined, fnSpec);
             }else{
                 var namedSpec = parse.apply(null, arguments);
                 return register(namedSpec.name, namedSpec.spec);
@@ -256,18 +272,23 @@ var protocop = (function(){
             
             var type = makeType(name, spec, isDisabled);
             if(name){
-                typesByName[name] = type;
-                if(publicInterface[name]){
-                    throw ("there's already something named \"" + name + "\"");
-                }else{
-                    publicInterface[name] = type;
-                }
+                registerTypeName(name, type);
             }
             return type;
         }
-
-        function makeSignature(spec){
-            return {
+        
+        function registerTypeName(name, type){
+            typesByName[name] = type;
+            if(publicInterface[name]){
+                throw ("there's already something named \"" + name + "\"");
+            }else{
+                publicInterface[name] = type;
+            }
+        }
+        
+        function makeSignature(name, spec){
+            
+            var type = {
                 check:function(candidate){
                     var problemDescription = typeCheck(candidate, spec, typesByName);
                     if(problemDescription){
@@ -278,8 +299,14 @@ var protocop = (function(){
                 },
                 dynamic:function(fn){
                     return dynamicFnWrapper(undefined, "", fn, spec, isDisabled);
-                }
+                }, 
+                name:name,
+                spec:spec
             };
+            
+            registerTypeName(name, type);
+            
+            return type;
         }
 
         function typeNamed(name){
@@ -288,13 +315,25 @@ var protocop = (function(){
 
         var publicInterface = {
                 register:register,
-                registerFn:function(params, returns){
+                registerFn:function(){
+                    var params, returns, name;
+                    
+                    if(arguments.length==2){
+                        name = undefined;
+                        params = arguments[0];
+                        returns = arguments[1];
+                    }else{
+                        name = arguments[0];
+                        params = arguments[1];
+                        returns = arguments[2];
+                    }
+                    
                     var spec = {
                             type:"function",
                             params:params,
                             returns:returns
                     };
-                    return makeSignature(spec);
+                    return makeSignature(name, spec);
                 },
                 compile:compile,
                 disable:disable,

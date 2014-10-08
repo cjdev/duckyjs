@@ -130,8 +130,49 @@ define(["protocop"], function(protocop){
             return e;
         }
     }
-
-    test("you can refer to named types from other protocols", function(){
+    
+    test("function signatures can be named", function(){
+        // given
+        var types = protocop.createTypeSystem();
+        
+        // when
+        var signature = types.registerFn("stringHashFunction", [{type:"string"}], {type:"number"});
+        
+        // then
+        ok(types.stringHashFunction);
+        deepEqual(signature.name, "stringHashFunction");
+        
+    });
+    
+    test("dynamically checks named input function signatures", function(){
+        // given
+        var types = protocop.createTypeSystem();
+        var printerType = types.registerFn("printer", [{type:"object"}], {type:"string"});
+        types.registerFn("stringifier", 
+                         [{type:"object"},
+                          {type:"function", signature:"printer"}], 
+                         {type:"function"});
+        
+        
+        
+        var checkedStringifier = types.stringifier.dynamic(function(object, printer){
+            return printer(object);
+        });
+        
+        // when
+        var error = captureError(function(){
+            var itemToPrint = {};
+            var printer = function(){
+                return 33;
+            };
+            
+            checkedStringifier(itemToPrint, printer);
+        });
+        
+        deepEqual(error, "printer(): invalid return type: expected type string but was number");
+    });
+    
+    test("you can refer to named protocols from other protocols", function(){
         // given
         var types = protocop.createTypeSystem();
         var barType = types.register("Bar", {
