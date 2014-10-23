@@ -1,5 +1,5 @@
 /*jshint smarttabs:true */
-define(["types!foo", "types!FooMaker"], function(foo, FooMaker){
+define(["types", "types!foo", "types!FooMaker"], function(testSubject, foo, FooMaker){
     
     test("require plugin works", function(){
         //then
@@ -19,6 +19,49 @@ define(["types!foo", "types!FooMaker"], function(foo, FooMaker){
 //        equal(FooMaker.name, "FooMaker");
         deepEqual(problems, {matches:false, problems:[
                                 "expected type function but was object"]});
+
+    });
+    
+    
+    test("plugin obeys require baseurl config", function(){
+        // given
+        var mockParentRequire = {
+                toUrl:function(moduleNamePlusExtension){
+                    return "nestedDir/" + moduleNamePlusExtension;
+                }
+        };
+        
+        var name = "baz";
+        var result;
+        var onload = function(r){
+            result = r;
+        };
+        onload.error = function(e){
+            console.log(e);
+        };
+        
+        var fakeHttpResources = {
+            "nestedDir/baz.protocol" : "translateString:function(string)->string"
+        };
+        var httpGetMock = function(uri, onSuccess, onError){
+            var responseBody = fakeHttpResources[uri];
+            if(responseBody){
+                onSuccess(responseBody);
+            }else{
+                onError("not found: " + uri);
+            }
+        };
+        var config = {};
+        
+        // when
+        testSubject.runTestWithAlternateHttpGet(httpGetMock, function(){
+            testSubject.load(name, mockParentRequire, onload, config);
+        });
+        
+        //then
+        ok(result);
+        equal(result.name, "baz");
+        ok(result.stub({}).translateString);
 
     });
     

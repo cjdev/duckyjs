@@ -12,7 +12,7 @@ define(['protocop'], function(protocop){
             onload(type);
         }else{
             
-            getProtocolText(name, function(text){
+            getProtocolText(name, parentRequire, function(text){
                 var namedSpec = parseProtocol(text);
                 var spec = namedSpec.spec;
                 if(spec.type==="function"){
@@ -49,8 +49,8 @@ define(['protocop'], function(protocop){
             });
         }
     }
-    function getProtocolText(name, callback, errorHandler){
-        get(name + ".protocol", callback, errorHandler);
+    function getProtocolText(name, parentRequire, callback, errorHandler){
+        get(parentRequire.toUrl(name + ".protocol"), callback, errorHandler);
     }
     
     function parseProtocol(text){
@@ -126,5 +126,16 @@ define(['protocop'], function(protocop){
             }
         }
     }
-    return {load:load};
+    
+    function runTestWithAlternateHttpGet(httpGetFn, test){
+        var realGet = get;
+        get = httpGetFn;
+        try{
+            test();
+        }finally{
+            get = realGet;
+        }
+    }
+    
+    return {load:load, runTestWithAlternateHttpGet:runTestWithAlternateHttpGet};
 });
