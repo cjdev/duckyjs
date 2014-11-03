@@ -114,3 +114,5 @@ see also
  * https://github.com/Gozala/protocol
  * https://github.com/codeparty/protocoljs
  * https://code.google.com/p/toryt/
+ * http://www.w3.org/TR/WebIDL/
+ * [flow (vaporware ?)](https://code.facebook.com/posts/304742986364211/-scale-2014-agenda-is-live-)
