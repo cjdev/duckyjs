@@ -1,8 +1,10 @@
 define(['protocop'], function(protocop){
     
     var types = protocop.createTypeSystem();
+    var specsByName = {};
     
     function load(name, parentRequire, onload, config){
+        
         function handleLoadError(err){
             onload.error(err);
         }
@@ -13,30 +15,59 @@ define(['protocop'], function(protocop){
         }else{
             
             getProtocolText(name, parentRequire, function(text){
-                var namedSpec = parseProtocol(text);
-                var spec = namedSpec.spec;
-                if(spec.type==="function"){
-                    var fnType = types.registerFn(spec.params, spec.returns);
-                    onload(fnType);
-                }else{
-                    var type = registerProtocol(name, namedSpec);
-                    var protocolNames = getDependentProtocolsForProtocolSpec(spec);
-                    getProtocols(protocolNames, function(){
-                        onload(type);
-                    });
+                
+                try{
+
+                    var namedSpec = parseProtocol(text);
+                    var spec = namedSpec.spec;
+                    specsByName[name] = spec;
+                    if(spec.type==="function"){
+                        var fnType = types.registerFn(spec.params, spec.returns);
+                        onload(fnType);
+                    }else{
+                        var type = registerProtocol(name, namedSpec);
+                        var protocolNames = type.dependencies();
+                        getProtocols(protocolNames, parentRequire, function(){
+                            onload(type);
+                        });
+                    }
+                }catch(err){
+                    handleLoadError(err);
                 }
             }, handleLoadError);
         }
     }
     
-    function getProtocols(protocolNames, onSuccess, handleError){
+    function jsEscape (content) {
+        return content.replace(/(['\\])/g, '\\$1')
+            .replace(/[\f]/g, "\\f")
+            .replace(/[\b]/g, "\\b")
+            .replace(/[\n]/g, "\\n")
+            .replace(/[\t]/g, "\\t")
+            .replace(/[\r]/g, "\\r")
+            .replace(/[\u2028]/g, "\\u2028")
+            .replace(/[\u2029]/g, "\\u2029");
+    }
+    
+    function writeForOptimizer(pluginName, moduleName, write) {
+        var name = pluginName + "!" + moduleName;
+        
+        var specjson = JSON.stringify(specsByName);
+        var constructorFn = 'function(types){' + 
+                            '    return types.optimizerRegister("' + moduleName +'", ' + specjson + ');' + 
+                            '}';
+        write("define('" + name + "', ['types'], " + constructorFn + ");");
+    }
+    
+    
+    function getProtocols(protocolNames, parentRequire, onSuccess, handleError){
         if(protocolNames.length===0) {
             onSuccess();
         }else{
             var resolved = [];
             
             each(protocolNames, function(idx, protocolName){
-                
+
                 function successHandler(name, spec, dependentType){
                     resolved.push(name);
                     
@@ -44,8 +75,7 @@ define(['protocop'], function(protocop){
                         onSuccess();
                     }
                 }
-                
-                getProtocol(protocolName, successHandler, handleError);
+                parentRequire(["types!" + protocolName], successHandler);
             });
         }
     }
@@ -61,11 +91,12 @@ define(['protocop'], function(protocop){
     }
     
     function registerProtocol(name, namedSpec){
+        specsByName[name] = namedSpec.spec;
         var type = types.register(name, namedSpec.spec);
         return type;
     }
     
-    function getProtocol(name, callback, errorHandler){
+    function getProtocol(name, parentRequire, callback, errorHandler){
         
         function onSuccess(responseText){
             var namedSpec = parseProtocol(responseText);
@@ -74,10 +105,39 @@ define(['protocop'], function(protocop){
             callback(name, namedSpec.spec, type);
         }
         
-        get(name + ".protocol", onSuccess, errorHandler);
+        get(parentRequire.toUrl(name + ".protocol"), onSuccess, errorHandler);
+    }
+    
+
+    function nodeGet(url, callback, errback) {
+        try {
+            var fs = require.nodeRequire('fs');
+            var file = fs.readFileSync(url, 'utf8');
+            //Remove BOM (Byte Mark Order) from utf8 files if it is there.
+            if (file.indexOf('\uFEFF') === 0) {
+                file = file.substring(1);
+            }
+            callback(file);
+
+        } catch (e) {
+            if (errback) {
+                errback(e);
+            }
+        }
     }
     
     function get(uri, onSuccess, onError){
+        var fn;
+        if(require.nodeRequire){
+            fn = nodeGet;
+        }else{
+            fn = xHRGet;
+        }
+        
+        fn(uri, onSuccess, onError);
+    }
+    
+    function xHRGet(uri, onSuccess, onError){
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function(){
             if (xhr.readyState === 4) {
@@ -91,29 +151,6 @@ define(['protocop'], function(protocop){
         xhr.open("GET", uri, true);
         xhr.send();
     }
-    
-    function getDependentProtocolsForProtocolSpec(spec){
-        var results = [];
-        
-        each(spec, function(name, propSpec){
-            if(propSpec.type==="function"){
-                
-                each(propSpec.params, function(idx, param){
-                    if(param.protocol){
-                        results.push(protocol);
-                    }
-                });
-                
-                var returnType = propSpec.returns ? propSpec.returns.protocol : undefined;
-                if(returnType){
-                    results.push(returnType);
-                }
-            }
-        });
-        
-        return results;
-    }
-    
     
     function each(items, fn){
         if(items.length){
@@ -137,5 +174,21 @@ define(['protocop'], function(protocop){
         }
     }
     
-    return {load:load, runTestWithAlternateHttpGet:runTestWithAlternateHttpGet};
+    function optimizerRegister(name, specs){
+        each(specs, function(name, spec){
+            if(spec.type==="function"){
+                types.registerFn(spec.params, spec.returns);
+            }else{
+                registerProtocol(name, {spec:spec});
+            }
+        });
+        return types[name];
+    }
+    
+    return {load:load, 
+            runTestWithAlternateHttpGet:runTestWithAlternateHttpGet,
+            write:writeForOptimizer,
+            optimizerRegister:optimizerRegister,
+            globalTypeSystem:types
+            };
 });

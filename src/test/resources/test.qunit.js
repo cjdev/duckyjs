@@ -5,6 +5,20 @@ define(["protocop"], function(protocop){
         ok(false, message);
     }
 
+//    test("preserves javascript stuff", function(){
+//        // given
+//        var types = protocop.createTypeSystem();
+//        var t = types.compile("[date]",
+//                            "getDate:function()->number");
+//        var d = new Date();
+//        
+//        // when
+//        d.getDate();
+//        t.assert({getDate:function(){}});
+//        
+//        // then
+//    });
+//    
     test("joe creates a typesystem", function(){
         // when
         var types = protocop.createTypeSystem();
@@ -283,6 +297,26 @@ define(["protocop"], function(protocop){
         equal(anyType.check({foo:"bar", baz:function(){}}).matches, true);
     });
 
+    
+    test("types know about their dependencies via argument types", function(){
+        // given
+        var types = protocop.createTypeSystem();
+        types.register("Bar", {});
+        types.register("Baz", {});
+        var fooType = types.register("Foo", {
+            bar2Baz:{
+                type:"function",
+                params:[{protocol:"Bar"}],
+                returns:{protocol:"Baz"}}
+        });
+        
+        // when
+        var dependencies = fooType.dependencies();
+
+        // then
+        deepEqual(dependencies, ["Bar", "Baz"]);
+    });
+    
     test("spec with a property", function(){
 
         // given

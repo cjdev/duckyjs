@@ -6,6 +6,10 @@
     <artifactId>protocop</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
+    <properties>
+        <optimizer-build-config-file>src/test/resources/optimizer-tests/buildconfig.js</optimizer-build-config-file>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -20,6 +24,11 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <extraPathsToServe>
+                        <path>target/optimizer</path>
+                    </extraPathsToServe>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>com.cj.jshintmojo</groupId>
@@ -32,7 +41,73 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <excludes>
+                        <exclude>src/main/config/buildconfig.js</exclude>
+                        <exclude>src/test/resources/libs</exclude>
+                        <exclude>${optimizer-build-config-file}</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.github.bringking</groupId>
+                <artifactId>requirejs-maven-plugin</artifactId>
+                <version>2.0.4</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>optimize</goal>
+                        </goals>
+                        <phase>compile</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- path to optimizer json config file -->
+                    <configFile>
+                        ${basedir}/${optimizer-build-config-file}
+                    </configFile>
+                    <!-- Whether or not to process configFile with maven 
+                        filters. If you use this option, some options in your configFile must resolve 
+                        to absolute paths (see below) -->
+                    <filterConfig>true</filterConfig>
+                    
+                </configuration>
             </plugin>
         </plugins>
+        <pluginManagement>
+            <plugins>
+                <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            com.github.bringking
+                                        </groupId>
+                                        <artifactId>
+                                            requirejs-maven-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [2.0.4,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>optimize</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore></ignore>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 </project>

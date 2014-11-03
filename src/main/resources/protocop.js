@@ -237,8 +237,31 @@ var protocop = (function(){
                 });
                 return o;
             }
+            
+            function dependencies(){
+                var results = [];
+                
+                each(spec, function(name, propSpec){
+                    if(propSpec.type==="function"){
+                        
+                        each(propSpec.params, function(idx, param){
+                            if(param.protocol){
+                                results.push(param.protocol);
+                            }
+                        });
+                        
+                        var returnType = propSpec.returns ? propSpec.returns.protocol : undefined;
+                        if(returnType){
+                            results.push(returnType);
+                        }
+                    }
+                });
+                
+                return results;
+            }
 
             return {
+                dependencies:dependencies,
                 check:check,
                 assert:assert,
                 dynamic:dynamic,
