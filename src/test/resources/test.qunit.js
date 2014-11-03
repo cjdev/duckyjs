@@ -284,7 +284,7 @@ define(["protocop"], function(protocop){
     });
 
     
-    test("types know about their dependencies via argument types", function(){
+    test("protocols know about their protocol dependencies", function(){
         // given
         var types = protocop.createTypeSystem();
         types.register("Bar", {});
@@ -298,6 +298,20 @@ define(["protocop"], function(protocop){
         
         // when
         var dependencies = fooType.dependencies();
+
+        // then
+        deepEqual(dependencies, ["Bar", "Baz"]);
+    });
+    
+    test("signatures know about their protocol dependencies", function(){
+        // given
+        var types = protocop.createTypeSystem();
+        types.register("Bar", {});
+        types.register("Baz", {});
+        var signature = types.registerFn("bar2Baz", [{protocol:"Bar"}], {protocol:"Baz"});
+        
+        // when
+        var dependencies = signature.dependencies();
 
         // then
         deepEqual(dependencies, ["Bar", "Baz"]);

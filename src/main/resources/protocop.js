@@ -243,17 +243,9 @@ var protocop = (function(){
                 
                 each(spec, function(name, propSpec){
                     if(propSpec.type==="function"){
-                        
-                        each(propSpec.params, function(idx, param){
-                            if(param.protocol){
-                                results.push(param.protocol);
-                            }
+                        each(getFnSpecProtocolDependencies(propSpec), function(idx, protocolName){
+                            results.push(protocolName);
                         });
-                        
-                        var returnType = propSpec.returns ? propSpec.returns.protocol : undefined;
-                        if(returnType){
-                            results.push(returnType);
-                        }
                     }
                 });
                 
@@ -271,7 +263,20 @@ var protocop = (function(){
         }
 
         
-
+        function getFnSpecProtocolDependencies(fnSpec){
+            var results = [];
+            each(fnSpec.params, function(idx, param){
+                if(param.protocol){
+                    results.push(param.protocol);
+                }
+            });
+            
+            var returnType = fnSpec.returns ? fnSpec.returns.protocol : undefined;
+            if(returnType){
+                results.push(returnType);
+            }
+            return results;
+        }
         
         function compile(){
             if(looksLikeStandaloneFunctionDef(arguments)){
@@ -312,6 +317,9 @@ var protocop = (function(){
         function makeSignature(name, spec){
             
             var type = {
+                dependencies:function(){
+                    return getFnSpecProtocolDependencies(spec);
+                },
                 check:function(candidate){
                     var problemDescription = typeCheck(candidate, spec, typesByName);
                     if(problemDescription){
@@ -335,29 +343,32 @@ var protocop = (function(){
         function typeNamed(name){
             return typesByName[name];
         }
+        
+        function registerFn(){
+            var params, returns, name;
+            
+            if(arguments.length==2){
+                name = undefined;
+                params = arguments[0];
+                returns = arguments[1];
+            }else{
+                name = arguments[0];
+                params = arguments[1];
+                returns = arguments[2];
+            }
+            
+            var spec = {
+                    type:"function",
+                    params:params,
+                    returns:returns
+            };
+            return makeSignature(name, spec);
+        }
+        
 
         var publicInterface = {
                 register:register,
-                registerFn:function(){
-                    var params, returns, name;
-                    
-                    if(arguments.length==2){
-                        name = undefined;
-                        params = arguments[0];
-                        returns = arguments[1];
-                    }else{
-                        name = arguments[0];
-                        params = arguments[1];
-                        returns = arguments[2];
-                    }
-                    
-                    var spec = {
-                            type:"function",
-                            params:params,
-                            returns:returns
-                    };
-                    return makeSignature(name, spec);
-                },
+                registerFn:registerFn,
                 compile:compile,
                 disable:disable,
                 typeNamed:typeNamed
