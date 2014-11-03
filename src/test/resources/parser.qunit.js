@@ -5,8 +5,6 @@ define(["protocop"], function(protocop){
 		ok(false, message);
 	}
 	
-
-	
     function assertThrows(expected, fn){
         try{
             fn();
@@ -15,7 +13,6 @@ define(["protocop"], function(protocop){
             equal(e, expected);
         }
     }
-    
 
     test("fails fast when the expected constructor function doesn't exist", function(){
 

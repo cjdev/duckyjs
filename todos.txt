@@ -1,3 +1,7 @@
-handle nullability & "undefinability" specs
-one protocol extends another
-optimizer support for non-node environments (e.g. rhino)
+[core]
+  - handle nullability & "undefinability" specs
+  - one protocol extends another
+  - signatures for functions that take/return other function signatures
+  - support for 'strict' proxies (proxies that only retain the properties that are specified in the protocol)
+[requirejs plugin]
+  - optimizer support for non-node environments (e.g. rhino)
