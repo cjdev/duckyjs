@@ -164,7 +164,7 @@ var protocop = (function(){
                     prefix = '"' + name + '" protocol violation: ';
                 }
                 each(spec, function(name, propSpec){
-                    if(!o.hasOwnProperty(name)){
+                    if(!(name in o)){
                         problems.push(prefix + 'expected a property named "' + name + '"');
                     }else{
                         //if(propSpec.type){

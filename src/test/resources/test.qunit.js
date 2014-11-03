@@ -5,20 +5,6 @@ define(["protocop"], function(protocop){
         ok(false, message);
     }
 
-//    test("preserves javascript stuff", function(){
-//        // given
-//        var types = protocop.createTypeSystem();
-//        var t = types.compile("[date]",
-//                            "getDate:function()->number");
-//        var d = new Date();
-//        
-//        // when
-//        d.getDate();
-//        t.assert({getDate:function(){}});
-//        
-//        // then
-//    });
-//    
     test("joe creates a typesystem", function(){
         // when
         var types = protocop.createTypeSystem();
@@ -537,8 +523,6 @@ define(["protocop"], function(protocop){
         deepEqual(exception, undefined);
     });
 
-
-
     test("dynamic() leaves other properties alone", function(){
 
         // given
@@ -560,7 +544,22 @@ define(["protocop"], function(protocop){
         // then
         equal(33, result);
     });
-
+    
+    test("dynamic() doesn't mess with the prototype chain", function(){
+        // given
+        var types = protocop.createTypeSystem();
+        var t = types.compile("[date]",
+                            "getDate:function()->number");
+        var orig = new Date();
+        
+        // when
+        var wrapped = t.dynamic(orig);
+        
+        // then
+        ok(wrapped instanceof Date, 'proxies are still an instanceof');
+        ok(orig.constructor === wrapped.constructor, 'same constructor');
+        equal(orig.getDate(), wrapped.getDate(), 'just a paranoid check to make sure they work in this context too');
+    });
 
     test("dynamic() handles 'this' properly", function(){
 
