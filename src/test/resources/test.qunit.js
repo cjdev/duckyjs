@@ -282,7 +282,22 @@ define(["protocop"], function(protocop){
         equal(anyType.check({}).matches, true);
         equal(anyType.check({foo:"bar", baz:function(){}}).matches, true);
     });
-
+    
+    test("protocols can have optional properties", function(){
+        // given
+        var types = protocop.createTypeSystem();
+        
+        
+        // when
+        var type = types.register("Foo", {
+            maybeName:{type:"string", optional:true}
+        });
+        
+        // then
+        deepEqual(type.check({}).problems, []);
+        deepEqual(type.check({maybeName:"bar", baz:function(){}}).problems, []);
+        deepEqual(type.check({maybeName:1, baz:function(){}}).problems, ["\"Foo\" protocol violation: \"maybeName\": expected type string but was number"]);
+    });
     
     test("protocols know about their protocol dependencies", function(){
         // given

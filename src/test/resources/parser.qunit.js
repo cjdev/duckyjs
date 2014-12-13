@@ -58,6 +58,19 @@ define(["protocop"], function(protocop){
 	});
 	
 	
+	test("optional properties", function(){
+
+        // when
+        var result = protocop.parse(
+                "maybeName:?string"
+        );
+        
+        // then
+        deepEqual(result, {name:undefined,
+                           spec:{
+                                maybeName:{type:"string", optional:true}}});
+    });
+	
    test("trims leading whitespace", function(){
 
         // when

@@ -52,6 +52,8 @@ var protocop = (function(){
 
         
         function typeCheck(value, propSpec){
+            if(value === undefined && propSpec.optional) return false;
+            
             var protocolName = propSpec.protocol;
             if(protocolName){
                 var existingType = typesByName[protocolName];
@@ -60,6 +62,7 @@ var protocop = (function(){
                     return "Doesn't comply with \"" + protocolName + "\" protocol: " + result.problems;
                 }
             }
+            
             
             if(propSpec.type){
                 // check by typeof
@@ -164,7 +167,7 @@ var protocop = (function(){
                     prefix = '"' + name + '" protocol violation: ';
                 }
                 each(spec, function(name, propSpec){
-                    if(!(name in o)){
+                    if(!(name in o) && !propSpec.optional){
                         problems.push(prefix + 'expected a property named "' + name + '"');
                     }else{
                         //if(propSpec.type){
@@ -382,6 +385,14 @@ var protocop = (function(){
 
     function compileTypeString(typeSpec){
         var argSpec;
+        
+        var optional;
+        
+        if(typeSpec.charAt(0) === '?'){
+            typeSpec = typeSpec.substring(1);
+            optional=true;
+        }
+        
         var i = typeSpec.indexOf('(');
         if(i>0){
             var type = typeSpec.substring(0, i);
@@ -424,6 +435,10 @@ var protocop = (function(){
             }else{
                 argSpec = {type: typeSpec};
             }
+        }
+        
+        if(optional){
+            argSpec.optional = true;
         }
         return argSpec;
     }
